@@ -7,6 +7,8 @@ export type ToggleKey = "isPlaying" | "showMoon" | "showInnerPlanets" | "showOut
 
 interface ControlBarProps {
   view: ViewState;
+  /** False when there is no 3D scene for playback and camera controls to act on. */
+  sceneAvailable: boolean;
   onPreset: (id: PresetId) => void;
   onPitch: (pitchAU: number) => void;
   onSpan: (spanYears: number) => void;
@@ -15,10 +17,10 @@ interface ControlBarProps {
   onToggle: (key: ToggleKey) => void;
 }
 
-const BUTTON = "rounded-lg py-1.5 text-xs transition";
+const BUTTON = "rounded-lg py-1.5 text-xs transition disabled:opacity-50";
 const IDLE = "border border-slate-700 bg-slate-800/90 hover:border-slate-600 hover:bg-slate-700";
 
-export function ControlBar({ view, onPreset, onPitch, onSpan, onTogglePlay, onResetCamera, onToggle }: ControlBarProps) {
+export function ControlBar({ view, sceneAvailable, onPreset, onPitch, onSpan, onTogglePlay, onResetCamera, onToggle }: ControlBarProps) {
   const kms = sunSpeedKms(view.pitchAU);
 
   return (
@@ -49,6 +51,7 @@ export function ControlBar({ view, onPreset, onPitch, onSpan, onTogglePlay, onRe
             <button
               type="button"
               onClick={onTogglePlay}
+              disabled={!sceneAvailable}
               className={`${BUTTON} border border-emerald-500/40 bg-emerald-500/20 px-3 font-semibold text-emerald-300 hover:bg-emerald-500/30`}
             >
               {view.isPlaying ? "Pause" : "Play"}
@@ -56,6 +59,7 @@ export function ControlBar({ view, onPreset, onPitch, onSpan, onTogglePlay, onRe
             <button
               type="button"
               onClick={onResetCamera}
+              disabled={!sceneAvailable}
               className={`${BUTTON} ${IDLE} px-2.5 font-medium text-slate-300`}
               title="Reset Camera"
             >

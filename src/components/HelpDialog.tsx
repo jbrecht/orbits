@@ -19,10 +19,16 @@ const Code = ({ children }: { children: ReactNode }) => (
  */
 export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const pressedBackdrop = useRef(false);
 
   useEffect(() => {
     const dialog = ref.current!;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // The browser would focus the scroll area first when the content overflows.
+      closeRef.current!.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -35,9 +41,14 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
       ref={ref}
       aria-labelledby="help-title"
       onClose={onClose}
+      // Only presses on the backdrop land on the <dialog> itself. Checking both
+      // ends keeps a drag from inside the panel (e.g. its scrollbar) open.
+      onMouseDown={(e) => {
+        pressedBackdrop.current = e.target === e.currentTarget;
+      }}
       onClick={(e) => {
-        // Only a click on the backdrop lands on the <dialog> itself.
-        if (e.target === e.currentTarget) e.currentTarget.close();
+        if (pressedBackdrop.current && e.target === e.currentTarget) e.currentTarget.close();
+        pressedBackdrop.current = false;
       }}
       className="glass-panel m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border-slate-700/80! p-0 text-slate-200 backdrop:bg-slate-950/75 backdrop:backdrop-blur-xs"
     >
@@ -51,6 +62,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           </div>
           <button
             type="button"
+            ref={closeRef}
             onClick={() => ref.current!.close()}
             className="flex size-8 items-center justify-center rounded-lg bg-slate-800/90 text-sm font-bold text-slate-300 transition hover:bg-slate-700 hover:text-white"
             aria-label="Close Help"
@@ -66,7 +78,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
               <span className="font-medium text-slate-200">Left-drag / 1-finger drag:</span> Orbit around the solar
               system. &nbsp;•&nbsp;
               <span className="font-medium text-slate-200">Scroll / Pinch:</span> Zoom in and out. &nbsp;•&nbsp;
-              <span className="font-medium text-slate-200">Right-drag / Shift-drag:</span> Pan the view.
+              <span className="font-medium text-slate-200">Right‑drag / Shift‑drag:</span> Pan the view.
             </p>
           </section>
 

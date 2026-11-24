@@ -70,7 +70,7 @@ export function HelixVisualization() {
     <>
       <div ref={containerRef} className="fixed inset-0 z-[1] touch-none [&>canvas]:block [&>canvas]:size-full" />
       <BodyLabels view={view} labelRefs={labelsRef} />
-      <InfoPanel view={view} />
+      <InfoPanel view={view} webglAvailable={webglAvailable} />
 
       <button
         type="button"
@@ -83,16 +83,9 @@ export function HelixVisualization() {
       </button>
       <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
 
-      {!webglAvailable && (
-        <div className="fixed inset-0 z-10 flex items-center justify-center p-4">
-          <p role="alert" className="glass-panel max-w-sm rounded-2xl p-5 text-center text-sm text-slate-300">
-            This view needs WebGL, which is turned off or unavailable in this browser.
-          </p>
-        </div>
-      )}
-
       <ControlBar
         view={view}
+        sceneAvailable={webglAvailable}
         onPreset={selectPreset}
         onPitch={(pitchAU) => patch({ pitchAU, preset: null })}
         onSpan={(spanYears) => {

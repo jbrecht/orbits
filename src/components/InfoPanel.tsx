@@ -3,7 +3,7 @@ import { CIRCUMFERENCE_AU, ORBIT_RADIUS_AU } from "@/lib/orbit/constants";
 import { axialScale, helixAngleDeg, sunSpeedKms } from "@/lib/orbit/physics";
 import { frameName, type ViewState } from "@/lib/orbit/view";
 
-export function InfoPanel({ view }: { view: ViewState }) {
+export function InfoPanel({ view, webglAvailable }: { view: ViewState; webglAvailable: boolean }) {
   return (
     <header className="glass-panel fixed top-3 left-3 z-20 max-w-[min(20rem,calc(100%-4.5rem))] rounded-2xl p-3.5 sm:top-5 sm:left-5 sm:max-w-sm sm:p-4">
       <div className="mb-1 flex items-center justify-between gap-2">
@@ -13,9 +13,15 @@ export function InfoPanel({ view }: { view: ViewState }) {
         </span>
       </div>
       <h1 className="text-base leading-tight font-bold text-white sm:text-lg sm:leading-7">Earth’s Helical Trajectory</h1>
-      <p className="mt-1 text-xs leading-relaxed text-slate-400">
-        Drag to orbit • Scroll/Pinch to zoom • Right-drag to pan
-      </p>
+      {webglAvailable ? (
+        <p className="mt-1 text-xs leading-relaxed text-slate-400">
+          Drag to orbit • Scroll/Pinch to zoom • Right‑drag to pan
+        </p>
+      ) : (
+        <p role="alert" className="mt-1 text-xs leading-relaxed text-amber-300">
+          This view needs WebGL 2, which this browser doesn’t support or has turned off.
+        </p>
+      )}
 
       <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-700/60 pt-3">
         <Metric

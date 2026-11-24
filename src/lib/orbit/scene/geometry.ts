@@ -37,7 +37,10 @@ export function makeArrowHead(pos: THREE.Vector3, dir: THREE.Vector3, color: num
 export function makeTether(material: THREE.LineBasicMaterial | THREE.LineDashedMaterial): THREE.Line {
   const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
   geo.setAttribute("lineDistance", new THREE.Float32BufferAttribute([0, 0], 1));
-  return new THREE.Line(geo, material);
+  const line = new THREE.Line(geo, material);
+  // Its bounding sphere is computed once and goes stale as the endpoints move.
+  line.frustumCulled = false;
+  return line;
 }
 
 export function setTether(line: THREE.Line, ax: number, ay: number, az: number, bx: number, by: number, bz: number) {
