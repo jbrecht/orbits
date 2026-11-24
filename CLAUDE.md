@@ -2,28 +2,38 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+@AGENTS.md
+
 ## What this is
 
-A single self-contained page, `helical_orbit_of_the_earth_3d_visualization.html`: an interactive Three.js view of Earth's orbit as a helix, traced as the Sun moves along a straight axis. You can also show the Moon and the other planets. There is no build, package manager, test suite or linter.
+A Next.js app, hosted on Vercel, with one page: an interactive Three.js view of Earth's orbit as a helix, traced as the Sun moves along a straight axis. You can also show the Moon and the other planets. It started as a single HTML file (`helical_orbit_of_the_earth_3d_visualization.html`, still in the first commit on `main`).
 
-## Running it
+## Commands
 
-Open the file in a browser: `open helical_orbit_of_the_earth_3d_visualization.html`. Its dependencies load from CDNs, so it needs network access:
-- Tailwind (Play CDN) does all the UI styling through utility classes.
-- Three.js is pinned to **r128** (`cdnjs`, the global `THREE`). Don't use APIs added after r128, and don't use ES-module imports, `OrbitControls` or other `examples/` add-ons. The camera controller is hand-written.
-- Fonts are Inter and JetBrains Mono (`.mono`).
+- `npm run dev`: dev server on port **3300** (this repo's range in claude-kit's ports.md is 3300–3399).
+- `npm run build`, `npm start`: production build, served on 3300.
+- `npm test`: Vitest unit tests for the pure physics in `src/lib/orbit/`.
+- `npm run typecheck`: `next typegen && tsc --noEmit` (`LayoutProps` comes from the generated route types).
+- `npm run lint`: ESLint.
+
+## Stack
+
+Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, `three` from npm. Fonts are Inter and JetBrains Mono via `next/font` (`font-sans`, `font-mono`). The page has no data fetching and prerenders as static HTML; Three.js only runs in the browser, inside `HelixVisualization`'s effect.
 
 ## Architecture
 
-Everything lives in one inline `<script>`, split into numbered sections (`// 1. CONSTANTS …` through `// 7. … ANIMATION LOOP`).
-
-- **Model.** The Sun moves along the +X axis. Each body circles in the Y–Z plane around the Sun's current X position. One `state` object holds everything that can change (`pitchAU` = AU the Sun travels per Earth year, `spanYears`, `phase` in Earth years, visibility toggles, `frameName`).
-- **One scale for both axes.** `WORLD_UNITS_PER_AU = 3.0` applies to the radius and the axis alike, so the helix angle `atan(pitch / circumference)` you see on screen is the true angle. Don't scale one axis on its own.
-- **Planet helices come from Earth's pitch.** Every body moves forward at the Sun's speed, so a planet's pitch is `pitchUnits * periodYr` and its turn count is `spanYears / periodYr`. Planet data is in `EXTRA_PLANETS`. Adding a planet means a config entry there plus a matching `#lbl-<id>` element in `#labels-layer`.
-- **Moon.** Its true distance is smaller than Earth's sphere, so it uses the made-up `MOON_VISUAL_RADIUS_UNITS` on purpose.
-- **Two update paths:**
-  - `rebuildHelixGeometry()` disposes and recreates everything in `helixGroup` (the axis line, the tubes, the dimension markers). It runs only when pitch, span or visibility changes, usually through `updateMetricsAndUI()`, which also refreshes the readouts. Anything new you add to `helixGroup` must be disposable this way.
-  - `animate()` runs every frame and only moves things that already exist (the Sun, Earth, Moon, planets and the moving ring). It writes tether endpoints straight into their `BufferAttribute` arrays, then sets `needsUpdate` and calls `computeLineDistances()` for dashed lines. Don't allocate geometry here.
-- **Labels are HTML, not sprites.** `projectLabelToScreen()` projects a world position onto the `.label-3d` divs every frame, and hides them when they're behind the camera or when symbols and names are both off.
-- **Presets** (`btn-galactic` 52.95 AU/yr ≈ 251 km/s, `btn-lsr` 4.11, `btn-tight` 1.11) set `state.pitchAU` and `frameName`, then refit the camera with `resetCameraToFit()`. Speeds in km/s come from `pitchAU / AU_PER_YR_PER_KMS`.
-- Playback speed scales with `spanYears`, so one sweep of the visible helix takes about 10 seconds whatever the span.
+- `src/lib/orbit/` holds the model, with no React or DOM:
+  - `constants.ts`: physical constants and scale. `WORLD_UNITS_PER_AU = 3.0` applies to the radius and the axis alike, so the helix angle `atan(pitch / circumference)` you see on screen is the true angle. Don't scale one axis on its own.
+  - `bodies.ts`: planet data (`PLANETS`) and label metadata. The Moon uses the made-up `MOON_VISUAL_RADIUS_UNITS` on purpose: its true distance is smaller than Earth's sphere.
+  - `physics.ts`: pure functions (helix angle, km/s, body positions, playback). Every body moves forward at the Sun's speed, so each position is `(sunX(years), orbitOffset(radius, years, period))`. A planet's pitch is Earth's pitch × its period.
+  - `view.ts`: `ViewState` (everything the user can change), `INITIAL_VIEW` and the presets (Galactic 52.95 AU/yr ≈ 251 km/s, LSR 4.11, Tight Coil 1.11). Preset button labels and help text compute their angles and speeds from these values.
+  - `scene/OrbitScene.ts`: owns the renderer and everything drawn. `scene/OrbitCameraController.ts` is the hand-written orbit/zoom/pan controller (no `OrbitControls`).
+- `src/components/`: `HelixVisualization` holds the `ViewState` in React, creates the `OrbitScene` once and passes it each new state with `scene.update(view)`. Bumping `fitRequest` refits the camera after the state is applied (presets, span changes, Reset View). The rest are presentational: `InfoPanel`, `ControlBar`, `HelpDialog`, `BodyLabels`.
+- **Two update paths in `OrbitScene`:**
+  - `rebuildHelix()` disposes and recreates everything in `helixGroup` (the axis line, the tubes). `update()` calls it only when pitch, span or visibility changes. Anything new you add to `helixGroup` must be disposable this way.
+  - `frame()` runs every animation frame and only moves things that already exist. Tethers get their endpoints written into their buffers via `setTether`. Don't allocate geometry there.
+- **The animation phase lives in the scene, not React**, so React doesn't re-render every frame. A span change rescales it to keep relative progress.
+- **Labels are HTML, not sprites.** `BodyLabels` renders their text; `OrbitScene` moves them every frame by projecting world positions through refs, and hides them when they're behind the camera.
+- **Adding a planet** means an entry in `PLANETS` (and its id in `PLANET_IDS`) plus a style in `BodyLabels`' `LABEL_STYLES`, which TypeScript requires.
+- **Lighting matches the r128 prototype.** `OrbitScene` turns off colour management, renders in linear sRGB, scales light intensities by π and uses no point-light decay. Removing those makes every colour darker and more saturated.
+- Playback speed scales with `spanYears`, so one sweep of the visible helix takes `SWEEP_SECONDS` (10 s) whatever the span.
