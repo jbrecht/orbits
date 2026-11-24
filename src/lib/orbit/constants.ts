@@ -8,7 +8,8 @@ export const CIRCUMFERENCE_AU = 2 * Math.PI * ORBIT_RADIUS_AU;
  * on screen is the true angle. Never scale one axis on its own.
  */
 export const WORLD_UNITS_PER_AU = 3.0;
-export const RADIUS_UNITS = ORBIT_RADIUS_AU * WORLD_UNITS_PER_AU;
+export const auToUnits = (au: number): number => au * WORLD_UNITS_PER_AU;
+export const RADIUS_UNITS = auToUnits(ORBIT_RADIUS_AU);
 
 export const MOON_PERIOD_YR = 27.321661 / 365.25636;
 /**

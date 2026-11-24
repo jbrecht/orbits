@@ -29,9 +29,14 @@ export function makeArrowHead(pos: THREE.Vector3, dir: THREE.Vector3, color: num
   return cone;
 }
 
-/** A two-point line whose endpoints are rewritten every frame. */
+/**
+ * A two-point line whose endpoints are rewritten every frame. It carries its
+ * own dash distances so `setTether` needn't call `computeLineDistances()`,
+ * which allocates a new attribute on every call.
+ */
 export function makeTether(material: THREE.LineBasicMaterial | THREE.LineDashedMaterial): THREE.Line {
   const geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  geo.setAttribute("lineDistance", new THREE.Float32BufferAttribute([0, 0], 1));
   return new THREE.Line(geo, material);
 }
 
@@ -45,7 +50,9 @@ export function setTether(line: THREE.Line, ax: number, ay: number, az: number, 
   a[4] = by;
   a[5] = bz;
   attr.needsUpdate = true;
-  if (line.material instanceof THREE.LineDashedMaterial) line.computeLineDistances();
+  const distances = line.geometry.attributes.lineDistance as THREE.BufferAttribute;
+  distances.setX(1, Math.hypot(bx - ax, by - ay, bz - az));
+  distances.needsUpdate = true;
 }
 
 export function createStarfield(count = 2800): THREE.Points {

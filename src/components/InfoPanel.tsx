@@ -1,17 +1,18 @@
+import type { ReactNode } from "react";
 import { CIRCUMFERENCE_AU, ORBIT_RADIUS_AU } from "@/lib/orbit/constants";
 import { axialScale, helixAngleDeg, sunSpeedKms } from "@/lib/orbit/physics";
 import { frameName, type ViewState } from "@/lib/orbit/view";
 
 export function InfoPanel({ view }: { view: ViewState }) {
   return (
-    <header className="glass-panel fixed top-3 left-3 z-20 max-w-xs rounded-2xl p-3.5 sm:top-5 sm:left-5 sm:max-w-sm sm:p-4">
+    <header className="glass-panel fixed top-3 left-3 z-20 max-w-[min(20rem,calc(100%-4.5rem))] rounded-2xl p-3.5 sm:top-5 sm:left-5 sm:max-w-sm sm:p-4">
       <div className="mb-1 flex items-center justify-between gap-2">
         <span className="text-[11px] font-semibold tracking-wider text-sky-400 uppercase">3D Celestial Geometry</span>
         <span className="rounded-full border border-sky-400/30 bg-sky-500/20 px-2 py-0.5 text-[10px] font-medium text-sky-300">
           {frameName(view)}
         </span>
       </div>
-      <h1 className="text-base leading-tight font-bold text-white sm:text-lg">Earth’s Helical Trajectory</h1>
+      <h1 className="text-base leading-tight font-bold text-white sm:text-lg sm:leading-7">Earth’s Helical Trajectory</h1>
       <p className="mt-1 text-xs leading-relaxed text-slate-400">
         Drag to orbit • Scroll/Pinch to zoom • Right-drag to pan
       </p>
@@ -34,7 +35,7 @@ export function InfoPanel({ view }: { view: ViewState }) {
           valueColor="text-amber-300"
         />
         <Metric
-          title="Earth Angle (α)"
+          title={<>Earth Angle (<span className="normal-case">α</span>)</>}
           value={`${helixAngleDeg(view.pitchAU).toFixed(1)}°`}
           detail="arctan(v☉/v⊕)"
           border="border-emerald-500/35"
@@ -47,7 +48,7 @@ export function InfoPanel({ view }: { view: ViewState }) {
 }
 
 interface MetricProps {
-  title: string;
+  title: ReactNode;
   value: string;
   detail: string;
   border: string;

@@ -1,8 +1,8 @@
 import {
   AU_PER_YR_PER_KMS,
+  auToUnits,
   CIRCUMFERENCE_AU,
   GALACTIC_PITCH_AU,
-  WORLD_UNITS_PER_AU,
 } from "./constants";
 
 /** Earth's helix angle against the orbital plane: arctan(v☉ / v⊕). */
@@ -28,7 +28,7 @@ export interface HelixFrame {
 }
 
 export function helixFrame(pitchAU: number, spanYears: number): HelixFrame {
-  const pitchUnits = pitchAU * WORLD_UNITS_PER_AU;
+  const pitchUnits = auToUnits(pitchAU);
   const totalLength = pitchUnits * spanYears;
   return { pitchUnits, totalLength, xStart: -totalLength / 2 };
 }

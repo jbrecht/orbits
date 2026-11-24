@@ -3,7 +3,7 @@ import { PITCH_RANGE, SPAN_RANGE } from "@/lib/orbit/constants";
 import { axialScale, helixAngleDeg, sunSpeedKms } from "@/lib/orbit/physics";
 import { PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
 
-type ToggleKey = "showMoon" | "showInnerPlanets" | "showOuterPlanets" | "showSymbols" | "showNames";
+export type ToggleKey = "isPlaying" | "showMoon" | "showInnerPlanets" | "showOuterPlanets" | "showSymbols" | "showNames";
 
 interface ControlBarProps {
   view: ViewState;
@@ -16,7 +16,7 @@ interface ControlBarProps {
 }
 
 const BUTTON = "rounded-lg py-1.5 text-xs transition";
-const IDLE = "border border-slate-700 bg-slate-800/90 hover:bg-slate-700";
+const IDLE = "border border-slate-700 bg-slate-800/90 hover:border-slate-600 hover:bg-slate-700";
 
 export function ControlBar({ view, onPreset, onPitch, onSpan, onTogglePlay, onResetCamera, onToggle }: ControlBarProps) {
   const kms = sunSpeedKms(view.pitchAU);
@@ -36,7 +36,7 @@ export function ControlBar({ view, onPreset, onPitch, onSpan, onTogglePlay, onRe
                   aria-pressed={active}
                   onClick={() => onPreset(p.id)}
                   className={`${BUTTON} px-2.5 font-semibold ${
-                    active ? "bg-sky-500 text-slate-950 shadow-sm" : `${IDLE} text-slate-200`
+                    active ? "border border-transparent bg-sky-500 text-slate-950 shadow-sm" : `${IDLE} text-slate-200`
                   }`}
                 >
                   {p.label} ({helixAngleDeg(p.pitchAU).toFixed(1)}°)
@@ -84,7 +84,7 @@ export function ControlBar({ view, onPreset, onPitch, onSpan, onTogglePlay, onRe
             onChange={onSpan}
           />
 
-          <div className="flex flex-wrap items-center justify-between gap-1.5 sm:col-span-4 sm:justify-end">
+          <div className="flex flex-wrap items-center gap-1.5 justify-start sm:col-span-4 sm:justify-end">
             <Toggle
               active={view.showMoon}
               activeClass="border-slate-400/50 bg-slate-500/25 text-slate-200 hover:bg-slate-500/35"
@@ -136,11 +136,11 @@ function Slider({
 }) {
   return (
     <div className="flex flex-col gap-1 sm:col-span-4">
-      <div className="flex justify-between text-xs">
+      <div className="flex justify-between gap-2 text-xs">
         <label htmlFor={id} className="font-medium text-slate-300">
           {label}
         </label>
-        <span className={`font-mono font-semibold ${valueColor}`}>{valueText}</span>
+        <span className={`shrink-0 font-mono font-semibold tabular-nums ${valueColor}`}>{valueText}</span>
       </div>
       <input
         id={id}
@@ -149,6 +149,7 @@ function Slider({
         max={range.max}
         step={range.step}
         value={value}
+        aria-valuetext={valueText}
         onChange={(e) => onChange(parseFloat(e.target.value))}
         className="w-full"
       />

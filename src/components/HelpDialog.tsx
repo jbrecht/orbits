@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { SPAN_RANGE } from "@/lib/orbit/constants";
 import { helixAngleDeg, sunSpeedKms } from "@/lib/orbit/physics";
 import { PRESETS, type PresetId } from "@/lib/orbit/view";
 
@@ -11,32 +12,36 @@ const Code = ({ children }: { children: ReactNode }) => (
   <code className="font-mono text-slate-200">{children}</code>
 );
 
-export function HelpDialog({ onClose }: { onClose: () => void }) {
+/**
+ * A native modal <dialog>: the browser traps focus, closes it on Escape and
+ * returns focus to the Help button. Every way of closing it goes through the
+ * dialog's own `close` event, which reports back through `onClose`.
+ */
+export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    const dialog = ref.current!;
+    if (open && !dialog.open) dialog.showModal();
+    if (!open && dialog.open) dialog.close();
+  }, [open]);
 
   const galactic = preset("galactic");
   const lsr = preset("lsr");
   const tight = preset("tight");
 
   return (
-    <div
-      className="fixed inset-0 z-30 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-xs"
+    <dialog
+      ref={ref}
+      aria-labelledby="help-title"
+      onClose={onClose}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        // Only a click on the backdrop lands on the <dialog> itself.
+        if (e.target === e.currentTarget) e.currentTarget.close();
       }}
+      className="glass-panel m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border-slate-700/80! p-0 text-slate-200 backdrop:bg-slate-950/75 backdrop:backdrop-blur-xs"
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="help-title"
-        className="glass-panel max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-700/80 p-5 text-slate-200 sm:p-6"
-      >
+      <div className="max-h-[85vh] overflow-y-auto p-5 sm:p-6">
         <div className="flex items-center justify-between border-b border-slate-700/70 pb-3">
           <div>
             <span className="text-[10px] font-semibold tracking-wider text-sky-400 uppercase">Controls & Concepts</span>
@@ -46,8 +51,7 @@ export function HelpDialog({ onClose }: { onClose: () => void }) {
           </div>
           <button
             type="button"
-            onClick={onClose}
-            autoFocus
+            onClick={() => ref.current!.close()}
             className="flex size-8 items-center justify-center rounded-lg bg-slate-800/90 text-sm font-bold text-slate-300 transition hover:bg-slate-700 hover:text-white"
             aria-label="Close Help"
           >
@@ -101,7 +105,7 @@ export function HelpDialog({ onClose }: { onClose: () => void }) {
               </li>
               <li>
                 <span className="font-semibold text-sky-300">Time Span:</span> Sets the total duration rendered along
-                the trajectory from <Code>1</Code> to <Code>100</Code> Earth years.
+                the trajectory from <Code>{SPAN_RANGE.min}</Code> to <Code>{SPAN_RANGE.max}</Code> Earth years.
               </li>
               <li>
                 <span className="font-semibold text-emerald-300">Pause / Play & Reset View:</span> Freezes or resumes
@@ -133,6 +137,6 @@ export function HelpDialog({ onClose }: { onClose: () => void }) {
           </section>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }

@@ -5,7 +5,7 @@ import {
   MOON_VISUAL_RADIUS_UNITS,
   RADIUS_UNITS,
   SWEEP_SECONDS,
-  WORLD_UNITS_PER_AU,
+  auToUnits,
 } from "../constants";
 import { advancePhase, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
 import { INITIAL_PHASE_YEARS, labelsVisible, type ViewState } from "../view";
@@ -25,7 +25,10 @@ const BACKGROUND = 0x050811;
 /**
  * The prototype was written against Three.js r128, before physically based
  * lighting and sRGB colour management became the defaults. These settings
- * keep its colours and brightness: r128 multiplied light intensities by π.
+ * keep its colours: r128 multiplied light intensities by π. One difference
+ * remains: r128's Sun light faded linearly to zero at 300 units, while the
+ * current falloff stays near full strength for longer, so bodies far from
+ * the Sun are lit somewhat more brightly than in the prototype.
  */
 THREE.ColorManagement.enabled = false;
 const LEGACY_LIGHT_SCALE = Math.PI;
@@ -200,6 +203,7 @@ export class OrbitScene {
     this.controls.dispose();
     disposeTree(this.scene);
     this.renderer.dispose();
+    this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
   }
 
@@ -313,7 +317,7 @@ export class OrbitScene {
 
     for (const p of PLANETS) {
       if (!isPlanetVisible(this.view, p)) continue;
-      const radiusUnits = p.radiusAU * WORLD_UNITS_PER_AU;
+      const radiusUnits = auToUnits(p.radiusAU);
       const curve = new ParametricCurve((t, target) => {
         const yr = t * spanYears;
         const [y, z] = orbitOffset(radiusUnits, yr, p.periodYr, p.phaseOffset);
@@ -343,6 +347,8 @@ export class OrbitScene {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.width, this.height, false);
+    // ResizeObserver fires after this frame rendered and setSize cleared it.
+    this.renderer.render(this.scene, this.camera);
   }
 
   private frame = (now: number) => {
@@ -386,7 +392,7 @@ export class OrbitScene {
         this.hideLabel(config.id);
         continue;
       }
-      const [py, pz] = orbitOffset(config.radiusAU * WORLD_UNITS_PER_AU, this.phase, config.periodYr, config.phaseOffset);
+      const [py, pz] = orbitOffset(auToUnits(config.radiusAU), this.phase, config.periodYr, config.phaseOffset);
       group.position.set(x, py, pz);
       setTether(tether, x, 0, 0, x, py, pz);
       this.placeLabel(config.id, x, py + config.sphereRadius + 0.65, pz);

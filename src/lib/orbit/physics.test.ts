@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GALACTIC_PITCH_AU, SWEEP_SECONDS } from "./constants";
+import { ORBIT_RADIUS_AU, RADIUS_UNITS, SWEEP_SECONDS } from "./constants";
 import {
   advancePhase,
   axialScale,
@@ -22,9 +22,12 @@ describe("presets", () => {
     expect(helixAngleDeg(preset.pitchAU).toFixed(1)).toBe(angle.toFixed(1));
   });
 
-  it("puts the galactic preset at ~251 km/s and 1.00× scale", () => {
-    expect(sunSpeedKms(GALACTIC_PITCH_AU)).toBeCloseTo(251.0, 0);
-    expect(axialScale(GALACTIC_PITCH_AU)).toBe(1);
+  it("starts on the galactic preset, at ~251 km/s and 1.00× scale", () => {
+    const galactic = PRESETS.find((p) => p.id === "galactic")!;
+    expect(INITIAL_VIEW.preset).toBe("galactic");
+    expect(INITIAL_VIEW.pitchAU).toBe(galactic.pitchAU);
+    expect(sunSpeedKms(galactic.pitchAU)).toBeCloseTo(251.0, 0);
+    expect(axialScale(galactic.pitchAU).toFixed(2)).toBe("1.00");
   });
 });
 
@@ -36,13 +39,14 @@ describe("helix geometry", () => {
     expect(sunX(frame, 10)).toBeCloseTo(frame.totalLength / 2);
   });
 
-  it("uses one scale for the axis and the radius", () => {
-    // Earth's pitch in world units over its circumference in world units
-    // must give the same angle as the AU values.
-    const frame = helixFrame(4.11, 1);
-    const circumferenceUnits = 2 * Math.PI * Math.hypot(...orbitOffset(3, 0, 1));
-    const angle = (Math.atan(frame.pitchUnits / circumferenceUnits) * 180) / Math.PI;
-    expect(angle).toBeCloseTo(helixAngleDeg(4.11), 10);
+  it("uses one scale for the axis and the radius, so the drawn angle is true", () => {
+    const axisUnitsPerAU = helixFrame(1, 1).pitchUnits;
+    expect(RADIUS_UNITS / ORBIT_RADIUS_AU).toBeCloseTo(axisUnitsPerAU, 12);
+
+    const pitchAU = 4.11;
+    const drawnCircumference = 2 * Math.PI * RADIUS_UNITS;
+    const drawnAngle = (Math.atan(helixFrame(pitchAU, 1).pitchUnits / drawnCircumference) * 180) / Math.PI;
+    expect(drawnAngle).toBeCloseTo(helixAngleDeg(pitchAU), 10);
   });
 
   it("returns a body to its start after one period", () => {
