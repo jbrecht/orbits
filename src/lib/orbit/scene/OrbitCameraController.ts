@@ -6,7 +6,7 @@ const DEFAULT_PHI = 1.18;
 
 /**
  * Orbits the camera around a target: left-drag or one finger rotates, the
- * wheel or a pinch zooms, right-drag or shift-drag pans.
+ * wheel or a pinch zooms, right-drag, shift-drag or two fingers pan.
  */
 export class OrbitCameraController {
   readonly target = new THREE.Vector3();
@@ -84,18 +84,23 @@ export class OrbitCameraController {
     this.prevPointer = { x: e.clientX, y: e.clientY };
 
     if (this.isPanning) {
-      const panSpeed = this.radius * 0.0012;
-      this.camera.getWorldDirection(this.forward);
-      this.right.crossVectors(this.forward, this.camera.up).normalize();
-      this.up.crossVectors(this.right, this.forward).normalize();
-      this.target.addScaledVector(this.right, -dx * panSpeed);
-      this.target.addScaledVector(this.up, dy * panSpeed);
+      this.pan(dx, dy);
     } else {
       this.theta -= dx * 0.0065;
       this.phi -= dy * 0.0065;
     }
     this.update();
   };
+
+  /** Moves the target with the pointer, by `dx`, `dy` CSS pixels. */
+  private pan(dx: number, dy: number) {
+    const panSpeed = this.radius * 0.0012;
+    this.camera.getWorldDirection(this.forward);
+    this.right.crossVectors(this.forward, this.camera.up).normalize();
+    this.up.crossVectors(this.right, this.forward).normalize();
+    this.target.addScaledVector(this.right, -dx * panSpeed);
+    this.target.addScaledVector(this.up, dy * panSpeed);
+  }
 
   private onMouseUp = () => {
     this.isDragging = false;
@@ -118,6 +123,7 @@ export class OrbitCameraController {
       this.isDragging = false;
       this.initialPinchDist = touchDistance(e.touches);
       this.initialRadius = this.radius;
+      this.prevPointer = touchMidpoint(e.touches);
     }
   };
 
@@ -131,6 +137,9 @@ export class OrbitCameraController {
       this.update();
     } else if (e.touches.length === 2 && this.initialPinchDist) {
       this.radius = this.initialRadius * (this.initialPinchDist / touchDistance(e.touches));
+      const mid = touchMidpoint(e.touches);
+      this.pan(mid.x - this.prevPointer.x, mid.y - this.prevPointer.y);
+      this.prevPointer = mid;
       this.update();
     }
   };
@@ -143,4 +152,11 @@ export class OrbitCameraController {
 
 function touchDistance(touches: TouchList): number {
   return Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
+}
+
+function touchMidpoint(touches: TouchList): { x: number; y: number } {
+  return {
+    x: (touches[0].clientX + touches[1].clientX) / 2,
+    y: (touches[0].clientY + touches[1].clientY) / 2,
+  };
 }

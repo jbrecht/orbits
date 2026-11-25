@@ -7,6 +7,7 @@ import {
   SWEEP_SECONDS,
   auToUnits,
 } from "../constants";
+import { fadeOverlappingLabels, type LabelBox } from "../labelLayout";
 import { advancePhase, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
 import { INITIAL_PHASE_YEARS, labelsVisible, type ViewState } from "../view";
 import { OrbitCameraController } from "./OrbitCameraController";
@@ -34,6 +35,13 @@ THREE.ColorManagement.enabled = false;
 const LEGACY_LIGHT_SCALE = Math.PI;
 
 type LabelElements = Partial<Record<BodyId, HTMLElement | null>>;
+
+interface LabelSlot extends LabelBox {
+  el: HTMLElement;
+}
+
+/** Opacity of a label that overlaps one nearer the camera. */
+const FADED_LABEL_OPACITY = 0.2;
 
 interface PlanetObjects {
   config: PlanetConfig;
@@ -68,6 +76,9 @@ export class OrbitScene {
   private readonly camera: THREE.PerspectiveCamera;
   private readonly controls: OrbitCameraController;
   private readonly resizeObserver: ResizeObserver;
+  private readonly labelObserver: ResizeObserver;
+  private readonly labelSlots: LabelSlot[] = [];
+  private readonly labelSlotById: Partial<Record<BodyId, LabelSlot>> = {};
 
   private readonly helixGroup = new THREE.Group();
   private readonly sunGroup = new THREE.Group();
@@ -172,6 +183,24 @@ export class OrbitScene {
     this.movingPlaneRing.rotation.y = Math.PI / 2;
     this.scene.add(this.movingPlaneRing);
 
+    // Label sizes change only with their text, so they're measured on change, not every frame.
+    const slotByElement = new Map<Element, LabelSlot>();
+    this.labelObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const slot = slotByElement.get(entry.target)!;
+        slot.width = entry.borderBoxSize[0].inlineSize;
+        slot.height = entry.borderBoxSize[0].blockSize;
+      }
+    });
+    for (const [id, el] of Object.entries(labels) as [BodyId, HTMLElement | null][]) {
+      if (!el) continue;
+      const slot: LabelSlot = { el, x: 0, y: 0, width: 0, height: 0, depth: 0, shown: false, faded: false };
+      this.labelSlots.push(slot);
+      this.labelSlotById[id] = slot;
+      slotByElement.set(el, slot);
+      this.labelObserver.observe(el);
+    }
+
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
     this.resize();
@@ -200,6 +229,7 @@ export class OrbitScene {
   dispose() {
     cancelAnimationFrame(this.frameId);
     this.resizeObserver.disconnect();
+    this.labelObserver.disconnect();
     this.controls.dispose();
     disposeTree(this.scene);
     this.renderer.dispose();
@@ -400,31 +430,39 @@ export class OrbitScene {
 
     this.placeLabel("sun", x, -1.75, 0);
     this.placeLabel("earth", x, ey + 1.05, ez);
+    this.applyLabels();
 
     this.renderer.render(this.scene, this.camera);
   };
 
   private hideLabel(id: BodyId) {
-    const el = this.labels[id];
-    if (el) el.style.opacity = "0";
+    const slot = this.labelSlotById[id];
+    if (slot) slot.shown = false;
   }
 
-  /** Projects a world position onto its HTML label; hides it behind the camera. */
+  /** Projects a world position to its label's centre; hides it behind the camera. */
   private placeLabel(id: BodyId, x: number, y: number, z: number) {
-    const el = this.labels[id];
-    if (!el) return;
-    if (!labelsVisible(this.view)) {
-      el.style.opacity = "0";
-      return;
-    }
+    const slot = this.labelSlotById[id];
+    if (!slot) return;
     const p = this.tempVec.set(x, y, z).project(this.camera);
-    if (p.z > 1) {
-      el.style.opacity = "0";
-      return;
+    slot.shown = labelsVisible(this.view) && p.z <= 1;
+    slot.x = (p.x * 0.5 + 0.5) * this.width;
+    slot.y = (-p.y * 0.5 + 0.5) * this.height;
+    slot.depth = p.z;
+  }
+
+  /** Fades labels that overlap a nearer one and stacks the nearest on top. */
+  private applyLabels() {
+    fadeOverlappingLabels(this.labelSlots);
+    const count = this.labelSlots.length;
+    for (let i = 0; i < count; i++) {
+      const { el, shown, faded, x, y } = this.labelSlots[i];
+      el.style.opacity = !shown ? "0" : faded ? String(FADED_LABEL_OPACITY) : "1";
+      if (!shown) continue;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      el.style.zIndex = String(count - i);
     }
-    el.style.opacity = "1";
-    el.style.left = `${(p.x * 0.5 + 0.5) * this.width}px`;
-    el.style.top = `${(-p.y * 0.5 + 0.5) * this.height}px`;
   }
 }
 

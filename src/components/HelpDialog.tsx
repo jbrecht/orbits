@@ -78,7 +78,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
               <span className="font-medium text-slate-200">Left-drag / 1-finger drag:</span> Orbit around the solar
               system. &nbsp;•&nbsp;
               <span className="font-medium text-slate-200">Scroll / Pinch:</span> Zoom in and out. &nbsp;•&nbsp;
-              <span className="font-medium text-slate-200">Right‑drag / Shift‑drag:</span> Pan the view.
+              <span className="font-medium text-slate-200">Right‑drag / Shift‑drag / 2‑finger drag:</span> Pan the view.
             </p>
           </section>
 

@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Next.js app, deployed to Vercel, with one page: an interactive Three.js view of Earth's orbit as a helix, traced as the Sun moves along a straight axis. You can also show the Moon and the other planets. It started as a single HTML file (`helical_orbit_of_the_earth_3d_visualization.html`, still in the first commit on `main`).
 
+It's built for desktop browsers. Phones aren't a target, so don't spend effort on phone layouts.
+
 ## Commands
 
 - `npm run dev`: dev server on port **3300**. The 3300–3399 range still needs an `orbits` row in claude-kit's `conventions/ports.md`.
@@ -33,7 +35,7 @@ Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, `three` from npm.
   - `rebuildHelix()` disposes and recreates everything in `helixGroup` (the axis line, the tubes). `update()` calls it only when pitch, span or visibility changes. Anything new you add to `helixGroup` must be disposable this way.
   - `frame()` runs every animation frame and only moves things that already exist. Tethers get their endpoints and dash distances written into preallocated buffers via `setTether` (not `computeLineDistances()`, which allocates). Don't allocate geometry there.
 - **The animation phase lives in the scene, not React**, so React doesn't re-render every frame. A span change rescales it to keep relative progress.
-- **Labels are HTML, not sprites.** `BodyLabels` renders their text; `OrbitScene` moves them every frame by projecting world positions through refs, and hides them when they're behind the camera.
+- **Labels are HTML, not sprites.** `BodyLabels` renders their text; `OrbitScene` moves them every frame by projecting world positions through refs, and hides them when they're behind the camera. `labelLayout.ts` fades a label that overlaps one nearer the camera and stacks labels nearest on top; their sizes come from a `ResizeObserver`, not from reading layout each frame.
 - **Adding a planet** means an entry in `PLANETS` (and its id in `PLANET_IDS`) plus a style in `BodyLabels`' `LABEL_STYLES`, which TypeScript requires.
 - **Colours match the r128 prototype.** `OrbitScene` turns off colour management, renders in linear sRGB and scales light intensities by π. Removing those makes every colour darker and more saturated. The Sun light's falloff still differs: r128 faded it linearly to zero at 300 units, so bodies far from the Sun are now lit somewhat more brightly.
 - Playback speed scales with `spanYears`, so one sweep of the visible helix takes `SWEEP_SECONDS` (10 s) whatever the span.
