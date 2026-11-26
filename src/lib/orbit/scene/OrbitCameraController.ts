@@ -50,12 +50,12 @@ export class OrbitCameraController {
     this.element.removeEventListener("touchend", this.onTouchEnd);
   }
 
-  /** Recentres and backs off far enough to frame a helix of this length. */
-  fitTo(totalLength: number) {
+  /** Recentres and backs off far enough to frame a helix of this length and radius. */
+  fitTo(totalLength: number, maxRadiusUnits: number) {
     this.target.set(0, 0, 0);
     this.theta = DEFAULT_THETA;
     this.phi = DEFAULT_PHI;
-    this.radius = fitCameraRadius(totalLength);
+    this.radius = fitCameraRadius(totalLength, maxRadiusUnits);
     this.update();
   }
 

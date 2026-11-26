@@ -1,3 +1,4 @@
+import { PLANETS, type PlanetConfig } from "./bodies";
 import { GALACTIC_PITCH_AU } from "./constants";
 
 export type PresetId = "galactic" | "lsr";
@@ -5,16 +6,15 @@ export type PresetId = "galactic" | "lsr";
 export interface Preset {
   id: PresetId;
   label: string;
-  frameName: string;
   pitchAU: number;
 }
 
 export const PRESETS: readonly Preset[] = [
-  { id: "galactic", label: "Galactic", frameName: "Galactic Orbit", pitchAU: GALACTIC_PITCH_AU },
-  { id: "lsr", label: "Local Stars / LSR", frameName: "Local Standard of Rest", pitchAU: 4.11 },
+  { id: "galactic", label: "Galactic Orbit", pitchAU: GALACTIC_PITCH_AU },
+  { id: "lsr", label: "Nearby Stars (LSR)", pitchAU: 4.11 },
 ];
 
-export const CUSTOM_FRAME_NAME = "Custom Axial Scale";
+export const CUSTOM_FRAME_NAME = "Custom Speed";
 
 /** Everything the user can change. The scene reads it; the UI writes it. */
 export interface ViewState {
@@ -44,8 +44,23 @@ export const INITIAL_VIEW: ViewState = {
 
 export const INITIAL_PHASE_YEARS = 0.35;
 
-export function frameName(view: ViewState): string {
-  return PRESETS.find((p) => p.id === view.preset)?.frameName ?? CUSTOM_FRAME_NAME;
+/** The Sun's speed as shown everywhere: whole km/s from 100 up, one decimal below. */
+export function formatKms(kms: number): string {
+  return `${kms >= 100 ? kms.toFixed(0) : kms.toFixed(1)} km/s`;
+}
+
+export function isPlanetVisible(view: ViewState, planet: PlanetConfig): boolean {
+  return planet.group === "inner" ? view.showInnerPlanets : view.showOuterPlanets;
+}
+
+/** The scene's accessible name: which bodies' paths are drawn. */
+export function describeScene(view: ViewState): string {
+  const bodies = ["Earth"];
+  if (view.showMoon) bodies.push("the Moon");
+  for (const p of PLANETS) if (isPlanetVisible(view, p)) bodies.push(p.name);
+  const list = bodies.length === 1 ? bodies[0] : `${bodies.slice(0, -1).join(", ")} and ${bodies.at(-1)}`;
+  const paths = bodies.length === 1 ? "path" : "paths";
+  return `Helical ${paths} of ${list} around the Sun’s straight path, over ${view.spanYears} years`;
 }
 
 export function formatBodyLabel(view: ViewState, symbol: string, name: string): string {

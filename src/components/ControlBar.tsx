@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { PITCH_RANGE, SPAN_RANGE } from "@/lib/orbit/constants";
 import { axialScale, sunSpeedKms } from "@/lib/orbit/physics";
-import { PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
+import { CUSTOM_FRAME_NAME, formatKms, PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
 
-export type ToggleKey = "isPlaying" | "showMoon" | "showInnerPlanets" | "showOuterPlanets" | "showSymbols" | "showNames";
+export type ToggleKey = "showMoon" | "showInnerPlanets" | "showOuterPlanets" | "showSymbols" | "showNames";
 
 interface ControlBarProps {
   view: ViewState;
@@ -28,7 +28,7 @@ export function ControlBar({ view, sceneAvailable, onPreset, onPitch, onSpan, on
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Reference frame">
-            <span className="mr-1 text-[11px] font-semibold text-slate-400">Reference Frame:</span>
+            <span className="mr-1 text-xs font-semibold text-slate-400">Reference Frame:</span>
             {PRESETS.map((p) => {
               const active = view.preset === p.id;
               return (
@@ -45,6 +45,11 @@ export function ControlBar({ view, sceneAvailable, onPreset, onPitch, onSpan, on
                 </button>
               );
             })}
+            {view.preset === null && (
+              <span className="rounded-full border border-sky-400/30 bg-sky-500/20 px-2 py-0.5 text-xs font-medium text-sky-300">
+                {CUSTOM_FRAME_NAME}
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
@@ -61,18 +66,18 @@ export function ControlBar({ view, sceneAvailable, onPreset, onPitch, onSpan, on
               onClick={onResetCamera}
               disabled={!sceneAvailable}
               className={`${BUTTON} ${IDLE} px-2.5 font-medium text-slate-300`}
-              title="Reset Camera"
+              title="Refit the camera to the visible orbits"
             >
               Reset View
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 items-center gap-3 border-t border-slate-700/60 pt-2 sm:grid-cols-12">
+        <div className="grid grid-cols-1 items-center gap-x-6 gap-y-3 border-t border-slate-700/60 pt-2 sm:grid-cols-2">
           <Slider
             id="slider-pitch"
-            label="Sun Speed / Axial Scale"
-            valueText={`${kms.toFixed(0)} km/s (${axialScale(view.pitchAU).toFixed(2)}×)`}
+            label="Sun Speed"
+            valueText={`${formatKms(kms)} · ${axialScale(view.pitchAU).toFixed(2)}×`}
             valueColor="text-amber-300"
             range={PITCH_RANGE}
             value={view.pitchAU}
@@ -87,34 +92,25 @@ export function ControlBar({ view, sceneAvailable, onPreset, onPitch, onSpan, on
             value={view.spanYears}
             onChange={onSpan}
           />
+        </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 justify-start sm:col-span-4 sm:justify-end">
-            <Toggle
-              active={view.showMoon}
-              activeClass="border-slate-400/50 bg-slate-500/25 text-slate-200 hover:bg-slate-500/35"
-              className="px-2"
-              title="Toggle Earth's Moon"
-              onClick={() => onToggle("showMoon")}
-            >
-              ☽ Moon
-            </Toggle>
-            <Toggle
-              active={view.showInnerPlanets}
-              activeClass="border-amber-400/50 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
-              onClick={() => onToggle("showInnerPlanets")}
-            >
-              Inner
-            </Toggle>
-            <Toggle
-              active={view.showOuterPlanets}
-              activeClass="border-orange-400/50 bg-orange-500/20 text-orange-200 hover:bg-orange-500/30"
-              onClick={() => onToggle("showOuterPlanets")}
-            >
-              Outer
-            </Toggle>
-            <Checkbox label="Symbols" checked={view.showSymbols} onChange={() => onToggle("showSymbols")} />
-            <Checkbox label="Names" checked={view.showNames} onChange={() => onToggle("showNames")} />
-          </div>
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-700/60 pt-2" role="group" aria-label="Show">
+          <span className="mr-1 text-xs font-semibold text-slate-400">Show:</span>
+          <Toggle active={view.showMoon} onClick={() => onToggle("showMoon")}>
+            Moon
+          </Toggle>
+          <Toggle active={view.showInnerPlanets} onClick={() => onToggle("showInnerPlanets")}>
+            Inner Planets
+          </Toggle>
+          <Toggle active={view.showOuterPlanets} onClick={() => onToggle("showOuterPlanets")}>
+            Outer Planets
+          </Toggle>
+          <Toggle active={view.showSymbols} onClick={() => onToggle("showSymbols")}>
+            Symbols
+          </Toggle>
+          <Toggle active={view.showNames} onClick={() => onToggle("showNames")}>
+            Names
+          </Toggle>
         </div>
       </div>
     </footer>
@@ -139,7 +135,7 @@ function Slider({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1 sm:col-span-4">
+    <div className="flex flex-col gap-1">
       <div className="flex justify-between gap-2 text-xs">
         <label htmlFor={id} className="font-medium text-slate-300">
           {label}
@@ -161,39 +157,19 @@ function Slider({
   );
 }
 
-function Toggle({
-  active,
-  activeClass,
-  className = "px-2.5",
-  title,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  activeClass: string;
-  className?: string;
-  title?: string;
-  onClick: () => void;
-  children: ReactNode;
-}) {
+function Toggle({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
       aria-pressed={active}
-      title={title}
       onClick={onClick}
-      className={`${BUTTON} ${className} ${active ? `border font-semibold ${activeClass}` : `${IDLE} font-medium text-slate-400`}`}
+      className={`${BUTTON} px-2.5 ${
+        active
+          ? "border border-transparent bg-slate-200 font-semibold text-slate-950 hover:bg-white"
+          : `${IDLE} font-medium text-slate-300`
+      }`}
     >
       {children}
     </button>
-  );
-}
-
-function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
-  return (
-    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-900/70 px-2 py-1.5 text-xs text-slate-300">
-      <input type="checkbox" checked={checked} onChange={onChange} className="rounded-sm accent-sky-400" />
-      <span>{label}</span>
-    </label>
   );
 }

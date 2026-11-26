@@ -3,13 +3,14 @@ import { CIRCUMFERENCE_AU, ORBIT_RADIUS_AU, RADIUS_UNITS, SWEEP_SECONDS } from "
 import {
   advancePhase,
   axialScale,
+  fitCameraRadius,
   helixFrame,
   orbitOffset,
   rescalePhase,
   sunSpeedKms,
   sunX,
 } from "./physics";
-import { PRESETS, INITIAL_VIEW, formatBodyLabel } from "./view";
+import { PRESETS, INITIAL_VIEW, describeScene, formatBodyLabel, formatKms } from "./view";
 
 describe("presets", () => {
   it.each([
@@ -84,5 +85,44 @@ describe("labels", () => {
     [false, false, ""],
   ])("symbols=%s names=%s → %j", (showSymbols, showNames, expected) => {
     expect(formatBodyLabel({ ...INITIAL_VIEW, showSymbols, showNames }, "☉", "Sun")).toBe(expected);
+  });
+});
+
+describe("camera fit", () => {
+  it("is unchanged by Earth's own radius", () => {
+    expect(fitCameraRadius(300)).toBe(fitCameraRadius(300, RADIUS_UNITS));
+    expect(fitCameraRadius(300)).toBeCloseTo(300 * 0.82 + 20);
+  });
+
+  it("backs off for an orbit wider than the helix is long", () => {
+    // Neptune at the LSR speed over 2 years: the helix is short, the orbit is not.
+    const length = helixFrame(4.11, 2).totalLength;
+    const neptune = 30.047 * 3;
+    expect(fitCameraRadius(length, neptune)).toBeGreaterThan(neptune * 2.6);
+    expect(fitCameraRadius(length, neptune)).toBeGreaterThan(fitCameraRadius(length));
+  });
+});
+
+describe("formatKms", () => {
+  it.each([
+    [251.04, "251 km/s"],
+    [100, "100 km/s"],
+    [94.83, "94.8 km/s"],
+    [19.48, "19.5 km/s"],
+  ])("%s → %s", (kms, expected) => {
+    expect(formatKms(kms)).toBe(expected);
+  });
+});
+
+describe("describeScene", () => {
+  it("names Earth alone by default", () => {
+    expect(describeScene(INITIAL_VIEW)).toBe("Helical path of Earth around the Sun’s straight path, over 2 years");
+  });
+
+  it("lists every body shown", () => {
+    const view = { ...INITIAL_VIEW, showMoon: true, showInnerPlanets: true };
+    expect(describeScene(view)).toBe(
+      "Helical paths of Earth, the Moon, Mercury, Venus and Mars around the Sun’s straight path, over 2 years",
+    );
   });
 });

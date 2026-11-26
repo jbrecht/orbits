@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { BodyId } from "@/lib/orbit/bodies";
 import { OrbitScene } from "@/lib/orbit/scene/OrbitScene";
-import { INITIAL_VIEW, PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
+import { describeScene, INITIAL_VIEW, PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
 import { BodyLabels } from "./BodyLabels";
 import { ControlBar, type ToggleKey } from "./ControlBar";
 import { HelpDialog } from "./HelpDialog";
@@ -23,8 +23,21 @@ function supportsWebGL2(): boolean {
 
 const subscribeNever = () => () => {};
 
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+function subscribeReducedMotion(onChange: () => void) {
+  const query = window.matchMedia(REDUCED_MOTION);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+const prefersReducedMotion = () => window.matchMedia(REDUCED_MOTION).matches;
+
 export function HelixVisualization() {
-  const [view, setView] = useState<ViewState>(INITIAL_VIEW);
+  const [chosenView, setView] = useState<ViewState>(INITIAL_VIEW);
+  // Playback follows the system's reduced-motion setting until Play or Pause is pressed.
+  const [playChoice, setPlayChoice] = useState<boolean | null>(null);
+  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion, () => false);
+  const isPlaying = playChoice ?? !reducedMotion;
+  const view = useMemo(() => ({ ...chosenView, isPlaying }), [chosenView, isPlaying]);
   // Bumped whenever the camera should refit after the view is applied.
   const [fitRequest, setFitRequest] = useState(0);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -68,15 +81,20 @@ export function HelixVisualization() {
 
   return (
     <>
-      <div ref={containerRef} className="fixed inset-0 z-[1] touch-none [&>canvas]:block [&>canvas]:size-full" />
+      <div
+        ref={containerRef}
+        role="img"
+        aria-label={describeScene(view)}
+        className="fixed inset-0 z-[1] touch-none [&>canvas]:block [&>canvas]:size-full"
+      />
       <BodyLabels view={view} labelRefs={labelsRef} />
-      <InfoPanel view={view} webglAvailable={webglAvailable} />
+      <InfoPanel webglAvailable={webglAvailable} />
 
       <button
         type="button"
         onClick={() => setHelpOpen(true)}
         className="glass-panel fixed top-3 right-3 z-20 flex size-9 items-center justify-center rounded-full text-sm font-bold text-sky-300 transition hover:border-sky-400/50 hover:text-white sm:top-5 sm:right-5"
-        title="Help & Controls Guide"
+        title="Help"
         aria-label="Help"
       >
         ?
@@ -92,7 +110,7 @@ export function HelixVisualization() {
           patch({ spanYears });
           refit();
         }}
-        onTogglePlay={() => toggle("isPlaying")}
+        onTogglePlay={() => setPlayChoice(!isPlaying)}
         onResetCamera={refit}
         onToggle={toggle}
       />

@@ -23,6 +23,9 @@ export function BodyLabels({
   view: ViewState;
   labelRefs: RefObject<Partial<Record<BodyId, HTMLElement | null>>>;
 }) {
+  // Glyphs alone are hard to tell apart at text size.
+  const symbolsOnly = view.showSymbols && !view.showNames;
+  const size = symbolsOnly ? ["text-base", "text-xl"] : ["text-xs", "text-sm"];
   return (
     <div
       className={`pointer-events-none fixed inset-0 z-10 overflow-hidden ${labelsVisible(view) ? "" : "hidden"}`}
@@ -35,7 +38,7 @@ export function BodyLabels({
             labelRefs.current[body.id] = el;
           }}
           title={body.title}
-          className={`label-3d border py-0.5 opacity-0 ${body.id === "moon" ? "px-1.5 text-xs" : "px-2 text-sm"} ${LABEL_STYLES[body.id]}`}
+          className={`label-3d border py-0.5 opacity-0 ${body.id === "moon" ? `px-1.5 ${size[0]}` : `px-2 ${size[1]}`} ${LABEL_STYLES[body.id]}`}
         >
           {formatBodyLabel(view, body.symbol, body.name)}
         </div>

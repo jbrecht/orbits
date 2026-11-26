@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A Next.js app, deployed to Vercel, with one page: an interactive Three.js view of Earth's orbit as a helix, traced as the Sun moves along a straight axis. You can also show the Moon and the other planets. It started as a single HTML file (`helical_orbit_of_the_earth_3d_visualization.html`, still in the first commit on `main`).
+A Next.js app, deployed to Vercel, with one page, "Helical Trajectories": an interactive Three.js view of the planets' orbits as helices, traced as the Sun moves along a straight axis. Earth is always shown; the Moon and the inner and outer planets can be turned on. It started as a single HTML file (`helical_orbit_of_the_earth_3d_visualization.html`, still in the first commit on `main`).
 
 It's built for desktop browsers. Phones aren't a target, so don't spend effort on phone layouts.
 
@@ -30,7 +30,7 @@ Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, `three` from npm.
   - `physics.ts`: pure functions (km/s, axial scale, body positions, playback). Every body moves forward at the Sun's speed, so each position is `(sunX(years), orbitOffset(radius, years, period))`. A planet's pitch is Earth's pitch × its period.
   - `view.ts`: `ViewState` (everything the user can change), `INITIAL_VIEW` and the presets (Galactic 52.95 AU/yr ≈ 251 km/s, LSR 4.11). The help text computes its speeds from these values.
   - `scene/OrbitScene.ts`: owns the renderer and everything drawn. `scene/OrbitCameraController.ts` is the hand-written orbit/zoom/pan controller (no `OrbitControls`).
-- `src/components/`: `HelixVisualization` holds the `ViewState` in React, creates the `OrbitScene` once and passes it each new state with `scene.update(view)`. Bumping `fitRequest` refits the camera after the state is applied (presets, span changes, Reset View). If WebGL 2 is unavailable, `InfoPanel` says so in place of the drag hint and the playback and camera buttons are disabled. The rest are presentational: `InfoPanel`, `ControlBar`, `HelpDialog` (a native modal `<dialog>`), `BodyLabels`.
+- `src/components/`: `HelixVisualization` holds the `ViewState` in React, creates the `OrbitScene` once and passes it each new state with `scene.update(view)`. Bumping `fitRequest` refits the camera to the helix's length and the widest visible orbit after the state is applied (presets, span changes, Reset View). `isPlaying` isn't stored with the rest: it follows `prefers-reduced-motion` until Play or Pause is pressed. If WebGL 2 is unavailable, `InfoPanel` says so in place of the drag hint and the playback and camera buttons are disabled. The rest are presentational: `InfoPanel`, `ControlBar`, `HelpDialog` (a native modal `<dialog>`), `BodyLabels`.
 - **Two update paths in `OrbitScene`:**
   - `rebuildHelix()` disposes and recreates everything in `helixGroup` (the axis line, the orbit paths). `update()` calls it only when pitch, span or visibility changes. Anything new you add to `helixGroup` must be disposable this way.
   - `frame()` runs every animation frame and only moves things that already exist. Tethers get their endpoints and dash distances written into preallocated buffers via `setTether` (not `computeLineDistances()`, which allocates). Don't allocate geometry there.

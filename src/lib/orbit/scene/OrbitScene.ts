@@ -9,7 +9,7 @@ import {
 } from "../constants";
 import { fadeOverlappingLabels, type LabelBox } from "../labelLayout";
 import { advancePhase, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
-import { INITIAL_PHASE_YEARS, labelsVisible, type ViewState } from "../view";
+import { INITIAL_PHASE_YEARS, isPlanetVisible, labelsVisible, type ViewState } from "../view";
 import { OrbitCameraController } from "./OrbitCameraController";
 import {
   ParametricCurve,
@@ -49,10 +49,6 @@ interface PlanetObjects {
   config: PlanetConfig;
   group: THREE.Group;
   tether: THREE.Line;
-}
-
-function isPlanetVisible(view: ViewState, planet: PlanetConfig): boolean {
-  return planet.group === "inner" ? view.showInnerPlanets : view.showOuterPlanets;
 }
 
 function helixInputsChanged(a: ViewState, b: ViewState): boolean {
@@ -227,7 +223,10 @@ export class OrbitScene {
 
   /** Reframes the camera around the whole visible helix. */
   fitCamera() {
-    this.controls.fitTo(helixFrame(this.view.pitchAU, this.view.spanYears).totalLength);
+    const view = this.view;
+    let maxRadius = view.showMoon ? RADIUS_UNITS + MOON_VISUAL_RADIUS_UNITS : RADIUS_UNITS;
+    for (const p of PLANETS) if (isPlanetVisible(view, p)) maxRadius = Math.max(maxRadius, auToUnits(p.radiusAU));
+    this.controls.fitTo(helixFrame(view.pitchAU, view.spanYears).totalLength, maxRadius);
   }
 
   dispose() {

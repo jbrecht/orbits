@@ -2,6 +2,7 @@ import {
   AU_PER_YR_PER_KMS,
   auToUnits,
   GALACTIC_PITCH_AU,
+  RADIUS_UNITS,
 } from "./constants";
 
 export function sunSpeedKms(pitchAU: number): number {
@@ -58,7 +59,10 @@ export function rescalePhase(phase: number, prevSpan: number, nextSpan: number):
   return (phase / prevSpan) * nextSpan;
 }
 
-/** Camera distance that frames the whole visible helix. */
-export function fitCameraRadius(totalLength: number): number {
-  return Math.max(24, Math.min(15000, totalLength * 0.82 + 20));
+/**
+ * Camera distance that frames the whole visible helix: its length, or the
+ * widest visible orbit when that is larger (about R / sin(fov / 2) at 45°).
+ */
+export function fitCameraRadius(totalLength: number, maxRadiusUnits = RADIUS_UNITS): number {
+  return Math.max(24, Math.min(15000, Math.max(totalLength * 0.82, maxRadiusUnits * 3) + 20));
 }
