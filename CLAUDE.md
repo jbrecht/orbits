@@ -12,7 +12,7 @@ It's built for desktop browsers. Phones aren't a target, so don't spend effort o
 
 ## Commands
 
-- `npm run dev`: dev server on port **3300**. The 3300–3399 range still needs an `orbits` row in claude-kit's `conventions/ports.md`.
+- `npm run dev`: dev server on port **3300**. orbits owns 3300–3399 in claude-kit's `conventions/ports.md`.
 - `npm run build`, `npm start`: production build, served on 3300.
 - `npm test`: Vitest unit tests for the pure physics in `src/lib/orbit/`.
 - `npm run typecheck`: `next typegen && tsc --noEmit` (`LayoutProps` comes from the generated route types).
