@@ -40,91 +40,93 @@ export function ControlBar({
       className="glass-panel fixed right-3 bottom-3 left-3 z-20 rounded-2xl p-3 sm:right-auto sm:bottom-5 sm:left-1/2 sm:w-[94%] sm:max-w-3xl sm:-translate-x-1/2 sm:p-4"
     >
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Reference frame">
-            <span className="mr-1 text-xs font-semibold text-slate-400">Reference Frame:</span>
-            {PRESETS.map((p) => {
-              const active = view.preset === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => onPreset(p.id)}
-                  className={`${BUTTON} px-2.5 font-semibold ${
-                    active ? "border border-transparent bg-sky-500 text-slate-950 shadow-sm" : `${IDLE} text-slate-200`
-                  }`}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-            {view.preset === null && (
-              <span className="rounded-full border border-sky-400/30 bg-sky-500/20 px-2 py-0.5 text-xs font-medium text-sky-300">
-                {CUSTOM_FRAME_NAME}
-              </span>
-            )}
+        <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-2">
+            <Slider
+              id="slider-pitch"
+              label="Sun Speed"
+              valueText={`${formatKms(kms)} · ${axialScale(view.pitchAU).toFixed(2)}×`}
+              valueColor="text-amber-300"
+              range={PITCH_RANGE}
+              value={view.pitchAU}
+              onChange={onPitch}
+            />
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Reference frame">
+              {PRESETS.map((p) => {
+                const active = view.preset === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => onPreset(p.id)}
+                    className={`${BUTTON} px-2.5 font-semibold ${
+                      active ? "border border-transparent bg-sky-500 text-slate-950 shadow-sm" : `${IDLE} text-slate-200`
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+              {view.preset === null && (
+                <span className="rounded-full border border-sky-400/30 bg-sky-500/20 px-2 py-0.5 text-xs font-medium text-sky-300">
+                  {CUSTOM_FRAME_NAME}
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={onTogglePlay}
-              disabled={!sceneAvailable}
-              className={`${BUTTON} border border-emerald-500/40 bg-emerald-500/20 px-3 font-semibold text-emerald-300 hover:bg-emerald-500/30`}
-            >
-              {view.isPlaying ? "Pause" : "Play"}
-            </button>
-            <button
-              type="button"
-              onClick={onResetCamera}
-              disabled={!sceneAvailable}
-              className={`${BUTTON} ${IDLE} px-2.5 font-medium text-slate-300`}
-              title="Refit the camera to the visible orbits"
-            >
-              Reset View
-            </button>
+          <div className="flex flex-col gap-2">
+            <Slider
+              id="slider-span"
+              label="Time Span"
+              valueText={`${view.spanYears.toFixed(1)} yrs`}
+              valueColor="text-sky-300"
+              range={SPAN_RANGE}
+              value={view.spanYears}
+              onChange={onSpan}
+            />
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={onTogglePlay}
+                disabled={!sceneAvailable}
+                className={`${BUTTON} border border-emerald-500/40 bg-emerald-500/20 px-3 font-semibold text-emerald-300 hover:bg-emerald-500/30`}
+              >
+                {view.isPlaying ? "Pause" : "Play"}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 items-center gap-x-6 gap-y-3 border-t border-slate-700/60 pt-2 sm:grid-cols-2">
-          <Slider
-            id="slider-pitch"
-            label="Sun Speed"
-            valueText={`${formatKms(kms)} · ${axialScale(view.pitchAU).toFixed(2)}×`}
-            valueColor="text-amber-300"
-            range={PITCH_RANGE}
-            value={view.pitchAU}
-            onChange={onPitch}
-          />
-          <Slider
-            id="slider-span"
-            label="Time Span"
-            valueText={`${view.spanYears.toFixed(1)} yrs`}
-            valueColor="text-sky-300"
-            range={SPAN_RANGE}
-            value={view.spanYears}
-            onChange={onSpan}
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-700/60 pt-2" role="group" aria-label="Show">
-          <span className="mr-1 text-xs font-semibold text-slate-400">Show:</span>
-          <Toggle active={view.showMoon} onClick={() => onToggle("showMoon")}>
-            Moon
-          </Toggle>
-          <Toggle active={view.showInnerPlanets} onClick={() => onToggle("showInnerPlanets")}>
-            Inner Planets
-          </Toggle>
-          <Toggle active={view.showOuterPlanets} onClick={() => onToggle("showOuterPlanets")}>
-            Outer Planets
-          </Toggle>
-          <Toggle active={view.showSymbols} onClick={() => onToggle("showSymbols")}>
-            Symbols
-          </Toggle>
-          <Toggle active={view.showNames} onClick={() => onToggle("showNames")}>
-            Names
-          </Toggle>
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-700/60 pt-3">
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Show">
+            <span className="mr-1 text-xs font-semibold text-slate-400">Show:</span>
+            <Toggle active={view.showMoon} onClick={() => onToggle("showMoon")}>
+              Moon
+            </Toggle>
+            <Toggle active={view.showInnerPlanets} onClick={() => onToggle("showInnerPlanets")}>
+              Inner Planets
+            </Toggle>
+            <Toggle active={view.showOuterPlanets} onClick={() => onToggle("showOuterPlanets")}>
+              Outer Planets
+            </Toggle>
+            <Toggle active={view.showSymbols} onClick={() => onToggle("showSymbols")}>
+              Symbols
+            </Toggle>
+            <Toggle active={view.showNames} onClick={() => onToggle("showNames")}>
+              Names
+            </Toggle>
+          </div>
+          <button
+            type="button"
+            onClick={onResetCamera}
+            disabled={!sceneAvailable}
+            className={`${BUTTON} ${IDLE} ml-auto px-2.5 font-medium text-slate-300`}
+            title="Refit the camera to the visible orbits"
+          >
+            Reset View
+          </button>
         </div>
       </div>
     </footer>
