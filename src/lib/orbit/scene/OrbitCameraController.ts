@@ -1,8 +1,10 @@
 import * as THREE from "three";
-import { fitCameraRadius } from "../physics";
+import { fitBounds, type Bounds, type FitOptions } from "../cameraFit";
 
 const DEFAULT_THETA = 0.52;
 const DEFAULT_PHI = 1.18;
+/** The share of the visible area a fitted scene fills. */
+const FIT_FILL = 0.92;
 
 /**
  * Orbits the camera around a target: left-drag or one finger rotates, the
@@ -50,12 +52,13 @@ export class OrbitCameraController {
     this.element.removeEventListener("touchend", this.onTouchEnd);
   }
 
-  /** Recentres and backs off far enough to frame a helix of this length and radius. */
-  fitTo(totalLength: number, maxRadiusUnits: number, visibleFraction: number) {
-    this.target.set(0, 0, 0);
+  /** Returns to the default angles, centred on `bounds` and far enough back to show all of it. */
+  fitTo(bounds: Bounds, view: Pick<FitOptions, "fovDeg" | "aspect" | "visibleFraction">) {
+    const fit = fitBounds(bounds, { ...view, theta: DEFAULT_THETA, phi: DEFAULT_PHI, fill: FIT_FILL });
+    this.target.set(...fit.target);
     this.theta = DEFAULT_THETA;
     this.phi = DEFAULT_PHI;
-    this.radius = fitCameraRadius(totalLength, maxRadiusUnits, visibleFraction);
+    this.radius = fit.distance;
     this.update();
   }
 

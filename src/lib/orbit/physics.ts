@@ -2,7 +2,6 @@ import {
   AU_PER_YR_PER_KMS,
   auToUnits,
   GALACTIC_PITCH_AU,
-  RADIUS_UNITS,
 } from "./constants";
 
 export function sunSpeedKms(pitchAU: number): number {
@@ -59,12 +58,13 @@ export function rescalePhase(phase: number, prevSpan: number, nextSpan: number):
   return (phase / prevSpan) * nextSpan;
 }
 
-/**
- * Camera distance that frames the whole visible helix: its length, or the
- * widest visible orbit when that is larger (about R / sin(fov / 2) at 45°,
- * divided by the fraction of the view's height that isn't covered).
- */
-export function fitCameraRadius(totalLength: number, maxRadiusUnits = RADIUS_UNITS, visibleFraction = 1): number {
-  const radiusFit = (maxRadiusUnits * 3) / Math.max(0.5, visibleFraction);
-  return Math.max(24, Math.min(15000, Math.max(totalLength * 0.82, radiusFit) + 20));
+/** How far the Sun's axis runs past each end of the helix, and its arrowhead's length. */
+export function axisExtension(totalLength: number): { extend: number; arrowSize: number } {
+  return { extend: Math.max(5, totalLength * 0.03), arrowSize: Math.max(0.7, totalLength * 0.008) };
+}
+
+/** How far the axis and its arrowhead (centred on the axis's end) reach past the helix. */
+export function axisOverhang(totalLength: number): number {
+  const { extend, arrowSize } = axisExtension(totalLength);
+  return extend + arrowSize / 2;
 }

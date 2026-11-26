@@ -8,7 +8,8 @@ import {
   auToUnits,
 } from "../constants";
 import { fadeOverlappingLabels, type LabelBox } from "../labelLayout";
-import { advancePhase, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
+import { sceneBounds } from "../cameraFit";
+import { advancePhase, axisExtension, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
 import { INITIAL_PHASE_YEARS, isPlanetVisible, labelsVisible, type ViewState } from "../view";
 import { OrbitCameraController } from "./OrbitCameraController";
 import {
@@ -230,11 +231,11 @@ export class OrbitScene {
 
   /** Reframes the camera around the whole visible helix. */
   fitCamera() {
-    const view = this.view;
-    let maxRadius = view.showMoon ? RADIUS_UNITS + MOON_VISUAL_RADIUS_UNITS : RADIUS_UNITS;
-    for (const p of PLANETS) if (isPlanetVisible(view, p)) maxRadius = Math.max(maxRadius, auToUnits(p.radiusAU));
-    const visibleFraction = (this.height - this.bottomInset) / this.height;
-    this.controls.fitTo(helixFrame(view.pitchAU, view.spanYears).totalLength, maxRadius, visibleFraction);
+    this.controls.fitTo(sceneBounds(this.view), {
+      fovDeg: this.camera.fov,
+      aspect: this.width / this.height,
+      visibleFraction: (this.height - this.bottomInset) / this.height,
+    });
   }
 
   dispose() {
@@ -299,7 +300,7 @@ export class OrbitScene {
     const xEnd = frame.xStart + frame.totalLength;
 
     // The Sun's straight-line path.
-    const axisExtend = Math.max(5, frame.totalLength * 0.03);
+    const { extend: axisExtend, arrowSize } = axisExtension(frame.totalLength);
     this.helixGroup.add(
       makeLine(
         [new THREE.Vector3(frame.xStart - axisExtend, 0, 0), new THREE.Vector3(xEnd + axisExtend, 0, 0)],
@@ -311,7 +312,7 @@ export class OrbitScene {
         new THREE.Vector3(xEnd + axisExtend, 0, 0),
         new THREE.Vector3(1, 0, 0),
         0xfacc15,
-        Math.max(0.7, frame.totalLength * 0.008),
+        arrowSize,
       ),
     );
 

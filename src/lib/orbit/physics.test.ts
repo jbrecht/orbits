@@ -3,7 +3,6 @@ import { CIRCUMFERENCE_AU, ORBIT_RADIUS_AU, RADIUS_UNITS, SWEEP_SECONDS } from "
 import {
   advancePhase,
   axialScale,
-  fitCameraRadius,
   helixFrame,
   orbitOffset,
   rescalePhase,
@@ -89,27 +88,6 @@ describe("labels", () => {
     [false, false, ""],
   ])("symbols=%s names=%s → %j", (showSymbols, showNames, expected) => {
     expect(formatBodyLabel({ ...INITIAL_VIEW, showSymbols, showNames }, "☉", "Sun")).toBe(expected);
-  });
-});
-
-describe("camera fit", () => {
-  it("is unchanged by Earth's own radius", () => {
-    expect(fitCameraRadius(300)).toBe(fitCameraRadius(300, RADIUS_UNITS));
-    expect(fitCameraRadius(300)).toBeCloseTo(300 * 0.82 + 20);
-  });
-
-  it("backs off for an orbit wider than the helix is long", () => {
-    // Neptune at the LSR speed over 2 years: the helix is short, the orbit is not.
-    const length = helixFrame(4.11, 2).totalLength;
-    const neptune = 30.047 * 3;
-    expect(fitCameraRadius(length, neptune)).toBeGreaterThan(neptune * 2.6);
-    expect(fitCameraRadius(length, neptune)).toBeGreaterThan(fitCameraRadius(length));
-  });
-
-  it("backs off further when the control bar covers part of the view", () => {
-    const length = helixFrame(4.11, 2).totalLength;
-    const neptune = 30.047 * 3;
-    expect(fitCameraRadius(length, neptune, 0.75)).toBeCloseTo((neptune * 3) / 0.75 + 20);
   });
 });
 
