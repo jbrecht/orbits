@@ -105,6 +105,12 @@ describe("camera fit", () => {
     expect(fitCameraRadius(length, neptune)).toBeGreaterThan(neptune * 2.6);
     expect(fitCameraRadius(length, neptune)).toBeGreaterThan(fitCameraRadius(length));
   });
+
+  it("backs off further when the control bar covers part of the view", () => {
+    const length = helixFrame(4.11, 2).totalLength;
+    const neptune = 30.047 * 3;
+    expect(fitCameraRadius(length, neptune, 0.75)).toBeCloseTo((neptune * 3) / 0.75 + 20);
+  });
 });
 
 describe("formatKms", () => {

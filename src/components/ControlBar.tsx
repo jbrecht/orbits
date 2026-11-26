@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 import { PITCH_RANGE, SPAN_RANGE } from "@/lib/orbit/constants";
 import { axialScale, sunSpeedKms } from "@/lib/orbit/physics";
 import { CUSTOM_FRAME_NAME, formatKms, PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
@@ -6,6 +6,7 @@ import { CUSTOM_FRAME_NAME, formatKms, PRESETS, type PresetId, type ViewState } 
 export type ToggleKey = "showMoon" | "showInnerPlanets" | "showOuterPlanets" | "showSymbols" | "showNames";
 
 interface ControlBarProps {
+  ref?: Ref<HTMLElement>;
   view: ViewState;
   /** False when there is no 3D scene for playback and camera controls to act on. */
   sceneAvailable: boolean;
@@ -20,11 +21,24 @@ interface ControlBarProps {
 const BUTTON = "rounded-lg py-1.5 text-xs transition disabled:opacity-50";
 const IDLE = "border border-slate-700 bg-slate-800/90 hover:border-slate-600 hover:bg-slate-700";
 
-export function ControlBar({ view, sceneAvailable, onPreset, onPitch, onSpan, onTogglePlay, onResetCamera, onToggle }: ControlBarProps) {
+export function ControlBar({
+  ref,
+  view,
+  sceneAvailable,
+  onPreset,
+  onPitch,
+  onSpan,
+  onTogglePlay,
+  onResetCamera,
+  onToggle,
+}: ControlBarProps) {
   const kms = sunSpeedKms(view.pitchAU);
 
   return (
-    <footer className="glass-panel fixed right-3 bottom-3 left-3 z-20 rounded-2xl p-3 sm:right-auto sm:bottom-5 sm:left-1/2 sm:w-[94%] sm:max-w-3xl sm:-translate-x-1/2 sm:p-4">
+    <footer
+      ref={ref}
+      className="glass-panel fixed right-3 bottom-3 left-3 z-20 rounded-2xl p-3 sm:right-auto sm:bottom-5 sm:left-1/2 sm:w-[94%] sm:max-w-3xl sm:-translate-x-1/2 sm:p-4"
+    >
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Reference frame">

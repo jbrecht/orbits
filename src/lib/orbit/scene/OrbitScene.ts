@@ -94,6 +94,8 @@ export class OrbitScene {
   private lastTime: number | null = null;
   private width = 1;
   private height = 1;
+  /** CSS pixels at the bottom of the view covered by the control bar. */
+  private bottomInset = 0;
   private readonly tempVec = new THREE.Vector3();
   /** The canvas size in CSS pixels, which line-mode orbit paths need for their width. */
   private readonly lineResolution = new THREE.Vector2(1, 1);
@@ -102,6 +104,8 @@ export class OrbitScene {
     private readonly container: HTMLElement,
     private readonly labels: LabelElements,
     initialView: ViewState,
+    /** The control bar: the scene is centred in the space above it. */
+    private readonly bottomBar: HTMLElement | null = null,
   ) {
     this.view = initialView;
 
@@ -205,6 +209,7 @@ export class OrbitScene {
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
+    if (bottomBar) this.resizeObserver.observe(bottomBar);
     this.resize();
 
     this.rebuildHelix();
@@ -228,7 +233,8 @@ export class OrbitScene {
     const view = this.view;
     let maxRadius = view.showMoon ? RADIUS_UNITS + MOON_VISUAL_RADIUS_UNITS : RADIUS_UNITS;
     for (const p of PLANETS) if (isPlanetVisible(view, p)) maxRadius = Math.max(maxRadius, auToUnits(p.radiusAU));
-    this.controls.fitTo(helixFrame(view.pitchAU, view.spanYears).totalLength, maxRadius);
+    const visibleFraction = (this.height - this.bottomInset) / this.height;
+    this.controls.fitTo(helixFrame(view.pitchAU, view.spanYears).totalLength, maxRadius, visibleFraction);
   }
 
   dispose() {
@@ -346,6 +352,15 @@ export class OrbitScene {
     this.width = Math.max(1, this.container.clientWidth);
     this.height = Math.max(1, this.container.clientHeight);
     this.camera.aspect = this.width / this.height;
+    const bar = this.bottomBar?.getBoundingClientRect();
+    const bottom = this.container.getBoundingClientRect().bottom;
+    this.bottomInset = bar ? Math.min(Math.max(0, bottom - bar.top), this.height / 2) : 0;
+    // Render a window shifted down by half the inset, which moves the scene's centre up by as much.
+    if (this.bottomInset > 0) {
+      this.camera.setViewOffset(this.width, this.height, 0, this.bottomInset / 2, this.width, this.height);
+    } else {
+      this.camera.clearViewOffset();
+    }
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.width, this.height, false);
     this.lineResolution.set(this.width, this.height);

@@ -51,11 +51,11 @@ export class OrbitCameraController {
   }
 
   /** Recentres and backs off far enough to frame a helix of this length and radius. */
-  fitTo(totalLength: number, maxRadiusUnits: number) {
+  fitTo(totalLength: number, maxRadiusUnits: number, visibleFraction: number) {
     this.target.set(0, 0, 0);
     this.theta = DEFAULT_THETA;
     this.phi = DEFAULT_PHI;
-    this.radius = fitCameraRadius(totalLength, maxRadiusUnits);
+    this.radius = fitCameraRadius(totalLength, maxRadiusUnits, visibleFraction);
     this.update();
   }
 

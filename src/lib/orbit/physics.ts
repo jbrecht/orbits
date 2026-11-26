@@ -61,8 +61,10 @@ export function rescalePhase(phase: number, prevSpan: number, nextSpan: number):
 
 /**
  * Camera distance that frames the whole visible helix: its length, or the
- * widest visible orbit when that is larger (about R / sin(fov / 2) at 45°).
+ * widest visible orbit when that is larger (about R / sin(fov / 2) at 45°,
+ * divided by the fraction of the view's height that isn't covered).
  */
-export function fitCameraRadius(totalLength: number, maxRadiusUnits = RADIUS_UNITS): number {
-  return Math.max(24, Math.min(15000, Math.max(totalLength * 0.82, maxRadiusUnits * 3) + 20));
+export function fitCameraRadius(totalLength: number, maxRadiusUnits = RADIUS_UNITS, visibleFraction = 1): number {
+  const radiusFit = (maxRadiusUnits * 3) / Math.max(0.5, visibleFraction);
+  return Math.max(24, Math.min(15000, Math.max(totalLength * 0.82, radiusFit) + 20));
 }

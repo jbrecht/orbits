@@ -47,11 +47,12 @@ export function HelixVisualization() {
   const containerRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<Partial<Record<BodyId, HTMLElement | null>>>({});
   const sceneRef = useRef<OrbitScene | null>(null);
+  const barRef = useRef<HTMLElement>(null);
   const appliedFit = useRef(0);
 
   useEffect(() => {
     if (!supportsWebGL2()) return;
-    const scene = new OrbitScene(containerRef.current!, labelsRef.current, INITIAL_VIEW);
+    const scene = new OrbitScene(containerRef.current!, labelsRef.current, INITIAL_VIEW, barRef.current);
     sceneRef.current = scene;
     return () => {
       scene.dispose();
@@ -102,6 +103,7 @@ export function HelixVisualization() {
       <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
 
       <ControlBar
+        ref={barRef}
         view={view}
         sceneAvailable={webglAvailable}
         onPreset={selectPreset}
