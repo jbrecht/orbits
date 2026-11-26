@@ -13,7 +13,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Earth’s Helical Orbit — 3D Geometric Visualization",
+  title: "Helical Trajectories — 3D Geometric Visualization",
   description:
     "An interactive 3D view of Earth's orbit as a helix, traced as the Sun moves through the galaxy, with the Moon and the other planets.",
 };

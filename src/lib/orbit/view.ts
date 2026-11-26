@@ -37,8 +37,8 @@ export const INITIAL_VIEW: ViewState = {
   showMoon: false,
   showInnerPlanets: false,
   showOuterPlanets: false,
-  showSymbols: true,
-  showNames: false,
+  showSymbols: false,
+  showNames: true,
   preset: "galactic",
 };
 

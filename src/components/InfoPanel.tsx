@@ -12,7 +12,7 @@ export function InfoPanel({ view, webglAvailable }: { view: ViewState; webglAvai
           {frameName(view)}
         </span>
       </div>
-      <h1 className="text-base leading-tight font-bold text-white sm:text-lg sm:leading-7">Earth’s Helical Trajectory</h1>
+      <h1 className="text-base leading-tight font-bold text-white sm:text-lg sm:leading-7">Helical Trajectories</h1>
       {webglAvailable ? (
         <p className="mt-1 text-xs leading-relaxed text-slate-400">
           Drag to orbit • Scroll/Pinch to zoom • Right‑drag to pan
