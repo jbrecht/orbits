@@ -16,8 +16,10 @@ import {
   createStarfield,
   disposeTree,
   makeArrowHead,
+  makeCurveLine,
   makeLine,
   makeTether,
+  setLineResolution,
   setTether,
 } from "./geometry";
 
@@ -97,6 +99,8 @@ export class OrbitScene {
   private width = 1;
   private height = 1;
   private readonly tempVec = new THREE.Vector3();
+  /** The canvas size in CSS pixels, which line-mode orbit paths need for their width. */
+  private readonly lineResolution = new THREE.Vector2(1, 1);
 
   constructor(
     private readonly container: HTMLElement,
@@ -310,16 +314,7 @@ export class OrbitScene {
       return target.set(sunX(frame, yr), y, z);
     });
     this.helixGroup.add(
-      new THREE.Mesh(
-        new THREE.TubeGeometry(earthCurve, clampSegments(spanYears * 48, 360, 4800), 0.14, 12, false),
-        new THREE.MeshStandardMaterial({
-          color: 0x38bdf8,
-          emissive: 0x0369a1,
-          emissiveIntensity: 0.55,
-          roughness: 0.25,
-          metalness: 0.2,
-        }),
-      ),
+      makeCurveLine(earthCurve, clampSegments(spanYears * 48, 360, 4800), 0x38bdf8, 3, this.lineResolution),
     );
 
     if (showMoon) {
@@ -329,20 +324,8 @@ export class OrbitScene {
         const [my, mz] = orbitOffset(MOON_VISUAL_RADIUS_UNITS, yr, MOON_PERIOD_YR);
         return target.set(sunX(frame, yr), ey + my, ez + mz);
       });
-      const moonTurns = spanYears / MOON_PERIOD_YR;
-      this.helixGroup.add(
-        new THREE.Mesh(
-          new THREE.TubeGeometry(moonCurve, clampSegments(moonTurns * 22, 480, 8000), 0.045, 6, false),
-          new THREE.MeshStandardMaterial({
-            color: 0xe2e8f0,
-            emissive: 0x475569,
-            emissiveIntensity: 0.45,
-            roughness: 0.4,
-            transparent: true,
-            opacity: 0.78,
-          }),
-        ),
-      );
+      const moonSegments = clampSegments((spanYears / MOON_PERIOD_YR) * 22, 480, 8000);
+      this.helixGroup.add(makeCurveLine(moonCurve, moonSegments, 0xe2e8f0, 1.5, this.lineResolution, 0.78));
     }
 
     for (const p of PLANETS) {
@@ -353,21 +336,8 @@ export class OrbitScene {
         const [y, z] = orbitOffset(radiusUnits, yr, p.periodYr, p.phaseOffset);
         return target.set(sunX(frame, yr), y, z);
       });
-      const turns = spanYears / p.periodYr;
-      this.helixGroup.add(
-        new THREE.Mesh(
-          new THREE.TubeGeometry(curve, clampSegments(turns * 36, 200, 6000), p.tubeRadius, 8, false),
-          new THREE.MeshStandardMaterial({
-            color: p.color,
-            emissive: p.emissive,
-            emissiveIntensity: 0.4,
-            roughness: 0.35,
-            metalness: 0.15,
-            transparent: true,
-            opacity: 0.85,
-          }),
-        ),
-      );
+      const segments = clampSegments((spanYears / p.periodYr) * 36, 200, 6000);
+      this.helixGroup.add(makeCurveLine(curve, segments, p.color, p.pathWidthPx, this.lineResolution, 0.85));
     }
   }
 
@@ -377,6 +347,8 @@ export class OrbitScene {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.width, this.height, false);
+    this.lineResolution.set(this.width, this.height);
+    setLineResolution(this.helixGroup, this.lineResolution);
     // ResizeObserver fires after this frame rendered and setSize cleared it.
     this.renderer.render(this.scene, this.camera);
   }

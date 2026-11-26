@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import { Line2 } from "three/examples/jsm/lines/Line2.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 
 /** A curve defined by a function of t in [0, 1]. */
 export class ParametricCurve extends THREE.Curve<THREE.Vector3> {
@@ -20,6 +23,35 @@ export function makeLine(points: THREE.Vector3[], color: number, opacity = 1, da
   const line = new THREE.Line(geo, mat);
   if (dashed) line.computeLineDistances();
   return line;
+}
+
+/**
+ * A solid line through `segments + 1` points of the curve, `widthPx` CSS
+ * pixels wide however far it is from the camera. `resolution` is the canvas
+ * size in CSS pixels; update it with `setLineResolution` when the canvas resizes.
+ */
+export function makeCurveLine(
+  curve: THREE.Curve<THREE.Vector3>,
+  segments: number,
+  color: number,
+  widthPx: number,
+  resolution: THREE.Vector2,
+  opacity = 1,
+): Line2 {
+  const points = curve.getPoints(segments);
+  const positions = new Float32Array(points.length * 3);
+  points.forEach((p, i) => p.toArray(positions, i * 3));
+  const geo = new LineGeometry().setPositions(positions);
+  const transparent = opacity < 1;
+  const mat = new LineMaterial({ color, linewidth: widthPx, resolution, transparent, opacity });
+  return new Line2(geo, mat);
+}
+
+export function setLineResolution(root: THREE.Object3D, resolution: THREE.Vector2) {
+  root.traverse((obj) => {
+    const material = (obj as THREE.Mesh).material;
+    if (material instanceof LineMaterial) material.resolution = resolution;
+  });
 }
 
 export function makeArrowHead(pos: THREE.Vector3, dir: THREE.Vector3, color: number, size = 0.42): THREE.Mesh {
