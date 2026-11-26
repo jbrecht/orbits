@@ -1,6 +1,6 @@
 import { GALACTIC_PITCH_AU } from "./constants";
 
-export type PresetId = "galactic" | "lsr" | "tight";
+export type PresetId = "galactic" | "lsr";
 
 export interface Preset {
   id: PresetId;
@@ -12,7 +12,6 @@ export interface Preset {
 export const PRESETS: readonly Preset[] = [
   { id: "galactic", label: "Galactic", frameName: "Galactic Orbit", pitchAU: GALACTIC_PITCH_AU },
   { id: "lsr", label: "Local Stars / LSR", frameName: "Local Standard of Rest", pitchAU: 4.11 },
-  { id: "tight", label: "Tight Coil", frameName: "Tight Coil Demo", pitchAU: 1.11 },
 ];
 
 export const CUSTOM_FRAME_NAME = "Custom Axial Scale";

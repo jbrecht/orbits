@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { PITCH_RANGE, SPAN_RANGE } from "@/lib/orbit/constants";
-import { axialScale, helixAngleDeg, sunSpeedKms } from "@/lib/orbit/physics";
+import { axialScale, sunSpeedKms } from "@/lib/orbit/physics";
 import { PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
 
 export type ToggleKey = "isPlaying" | "showMoon" | "showInnerPlanets" | "showOuterPlanets" | "showSymbols" | "showNames";
@@ -41,7 +41,7 @@ export function ControlBar({ view, sceneAvailable, onPreset, onPitch, onSpan, on
                     active ? "border border-transparent bg-sky-500 text-slate-950 shadow-sm" : `${IDLE} text-slate-200`
                   }`}
                 >
-                  {p.label} ({helixAngleDeg(p.pitchAU).toFixed(1)}°)
+                  {p.label}
                 </button>
               );
             })}
