@@ -9,9 +9,11 @@ export interface Preset {
   pitchAU: number;
 }
 
+const LSR_PITCH_AU = 4.11;
+
 export const PRESETS: readonly Preset[] = [
   { id: "galactic", label: "Galactic Orbit", pitchAU: GALACTIC_PITCH_AU },
-  { id: "lsr", label: "Nearby Stars (LSR)", pitchAU: 4.11 },
+  { id: "lsr", label: "Nearby Stars (LSR)", pitchAU: LSR_PITCH_AU },
 ];
 
 export const CUSTOM_FRAME_NAME = "Custom Speed";
@@ -31,7 +33,8 @@ export interface ViewState {
 }
 
 export const INITIAL_VIEW: ViewState = {
-  pitchAU: GALACTIC_PITCH_AU,
+  // Galactic speed stretches the helix almost straight; the LSR coils are easy to see.
+  pitchAU: LSR_PITCH_AU,
   spanYears: 2,
   isPlaying: true,
   showMoon: false,
@@ -39,7 +42,7 @@ export const INITIAL_VIEW: ViewState = {
   showOuterPlanets: false,
   showSymbols: false,
   showNames: true,
-  preset: "galactic",
+  preset: "lsr",
 };
 
 export const INITIAL_PHASE_YEARS = 0.35;

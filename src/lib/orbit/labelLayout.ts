@@ -7,19 +7,22 @@ export interface LabelBox {
   height: number;
   /** Smaller is nearer the camera. */
   depth: number;
+  /** A higher priority wins an overlap whatever the depth. */
+  priority?: number;
   shown: boolean;
   /** Output: the label overlaps a nearer label that is itself not faded. */
   faded: boolean;
 }
 
-const byDepth = (a: LabelBox, b: LabelBox) => a.depth - b.depth;
+const byPriorityThenDepth = (a: LabelBox, b: LabelBox) => (b.priority ?? 0) - (a.priority ?? 0) || a.depth - b.depth;
 
 /**
- * Marks each shown label that overlaps a nearer, unfaded one as faded. Sorts
- * `boxes` in place, nearest first, so callers can stack them in that order.
+ * Marks each shown label that overlaps a winning, unfaded one as faded: a
+ * higher priority wins, then the nearer label. Sorts `boxes` in place, winners
+ * first, so callers can stack them in that order.
  */
 export function fadeOverlappingLabels(boxes: LabelBox[], gapPx = 2): void {
-  boxes.sort(byDepth);
+  boxes.sort(byPriorityThenDepth);
   for (let i = 0; i < boxes.length; i++) {
     const a = boxes[i];
     a.faded = false;

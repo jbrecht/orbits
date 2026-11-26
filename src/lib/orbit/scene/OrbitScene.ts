@@ -42,7 +42,7 @@ interface LabelSlot extends LabelBox {
   el: HTMLElement;
 }
 
-/** Opacity of a label that overlaps one nearer the camera. */
+/** Opacity of a label that overlaps one that wins (see `fadeOverlappingLabels`). */
 const FADED_LABEL_OPACITY = 0.2;
 
 interface PlanetObjects {
@@ -194,7 +194,9 @@ export class OrbitScene {
     });
     for (const [id, el] of Object.entries(labels) as [BodyId, HTMLElement | null][]) {
       if (!el) continue;
-      const slot: LabelSlot = { el, x: 0, y: 0, width: 0, height: 0, depth: 0, shown: false, faded: false };
+      // Earth is what the page is read from, so its label wins any overlap (notably with the Sun's).
+      const priority = id === "earth" ? 1 : 0;
+      const slot: LabelSlot = { el, x: 0, y: 0, width: 0, height: 0, depth: 0, priority, shown: false, faded: false };
       this.labelSlots.push(slot);
       this.labelSlotById[id] = slot;
       slotByElement.set(el, slot);
@@ -422,7 +424,7 @@ export class OrbitScene {
     slot.depth = p.z;
   }
 
-  /** Fades labels that overlap a nearer one and stacks the nearest on top. */
+  /** Fades labels that overlap a winning one and stacks the winners on top. */
   private applyLabels() {
     fadeOverlappingLabels(this.labelSlots);
     const count = this.labelSlots.length;

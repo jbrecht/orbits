@@ -21,10 +21,14 @@ describe("presets", () => {
     expect(sunSpeedKms(preset.pitchAU).toFixed(1)).toBe(kms.toFixed(1));
   });
 
-  it("starts on the galactic preset, at ~251 km/s and 1.00× scale", () => {
+  it("starts on the LSR preset, where the coils are visible", () => {
+    const lsr = PRESETS.find((p) => p.id === "lsr")!;
+    expect(INITIAL_VIEW.preset).toBe("lsr");
+    expect(INITIAL_VIEW.pitchAU).toBe(lsr.pitchAU);
+  });
+
+  it("puts the galactic preset at ~251 km/s and 1.00× scale", () => {
     const galactic = PRESETS.find((p) => p.id === "galactic")!;
-    expect(INITIAL_VIEW.preset).toBe("galactic");
-    expect(INITIAL_VIEW.pitchAU).toBe(galactic.pitchAU);
     expect(sunSpeedKms(galactic.pitchAU)).toBeCloseTo(251.0, 0);
     expect(axialScale(galactic.pitchAU).toFixed(2)).toBe("1.00");
   });

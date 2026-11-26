@@ -22,6 +22,16 @@ describe("fadeOverlappingLabels", () => {
     expect(boxes).toEqual([near, far]);
   });
 
+  it("lets a higher priority win over a nearer label", () => {
+    const sun = box(100, 100, 0.5);
+    const earth = { ...box(110, 105, 0.9), priority: 1 };
+    const boxes = [sun, earth];
+    fadeOverlappingLabels(boxes);
+    expect(earth.faded).toBe(false);
+    expect(sun.faded).toBe(true);
+    expect(boxes).toEqual([earth, sun]);
+  });
+
   it("leaves labels that don't overlap alone", () => {
     const a = box(100, 100, 0.5);
     const b = box(200, 100, 0.9);
