@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { CIRCUMFERENCE_AU, ORBIT_RADIUS_AU } from "@/lib/orbit/constants";
-import { axialScale, helixAngleDeg, sunSpeedKms } from "@/lib/orbit/physics";
+import { axialScale, sunSpeedKms } from "@/lib/orbit/physics";
 import { frameName, type ViewState } from "@/lib/orbit/view";
 
 export function InfoPanel({ view, webglAvailable }: { view: ViewState; webglAvailable: boolean }) {
@@ -23,7 +23,7 @@ export function InfoPanel({ view, webglAvailable }: { view: ViewState; webglAvai
         </p>
       )}
 
-      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-slate-700/60 pt-3">
+      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-700/60 pt-3">
         <Metric
           title="Earth Orbit"
           value={`${(ORBIT_RADIUS_AU * 2).toFixed(2)} AU`}
@@ -39,14 +39,6 @@ export function InfoPanel({ view, webglAvailable }: { view: ViewState; webglAvai
           border="border-amber-500/25"
           titleColor="text-amber-300/80"
           valueColor="text-amber-300"
-        />
-        <Metric
-          title={<>Earth Angle (<span className="normal-case">α</span>)</>}
-          value={`${helixAngleDeg(view.pitchAU).toFixed(1)}°`}
-          detail="arctan(v☉/v⊕)"
-          border="border-emerald-500/35"
-          titleColor="text-emerald-300/80"
-          valueColor="text-emerald-300"
         />
       </div>
     </header>

@@ -1,14 +1,8 @@
 import {
   AU_PER_YR_PER_KMS,
   auToUnits,
-  CIRCUMFERENCE_AU,
   GALACTIC_PITCH_AU,
 } from "./constants";
-
-/** Earth's helix angle against the orbital plane: arctan(v☉ / v⊕). */
-export function helixAngleDeg(pitchAU: number): number {
-  return (Math.atan(pitchAU / CIRCUMFERENCE_AU) * 180) / Math.PI;
-}
 
 export function sunSpeedKms(pitchAU: number): number {
   return pitchAU / AU_PER_YR_PER_KMS;

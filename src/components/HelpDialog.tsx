@@ -1,11 +1,11 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { SPAN_RANGE } from "@/lib/orbit/constants";
-import { helixAngleDeg, sunSpeedKms } from "@/lib/orbit/physics";
+import { sunSpeedKms } from "@/lib/orbit/physics";
 import { PRESETS, type PresetId } from "@/lib/orbit/view";
 
 function preset(id: PresetId) {
   const p = PRESETS.find((x) => x.id === id)!;
-  return { ...p, angle: helixAngleDeg(p.pitchAU).toFixed(1), kms: sunSpeedKms(p.pitchAU) };
+  return { ...p, kms: sunSpeedKms(p.pitchAU) };
 }
 
 const Code = ({ children }: { children: ReactNode }) => (
@@ -34,7 +34,6 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
 
   const galactic = preset("galactic");
   const lsr = preset("lsr");
-  const tight = preset("tight");
 
   return (
     <dialog
@@ -86,23 +85,13 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
             <h3 className="mb-1 font-semibold text-white">Reference Frame Presets</h3>
             <ul className="space-y-1.5 text-slate-400">
               <li>
-                <span className="font-semibold text-sky-300">
-                  {galactic.label} ({galactic.angle}°):
-                </span>{" "}
+                <span className="font-semibold text-sky-300">{galactic.label}:</span>{" "}
                 True scale of the Sun orbiting the Milky Way center at ~{galactic.kms.toFixed(0)} km/s (
                 {galactic.pitchAU} AU/yr).
               </li>
               <li>
-                <span className="font-semibold text-slate-200">
-                  {lsr.label} ({lsr.angle}°):
-                </span>{" "}
+                <span className="font-semibold text-slate-200">{lsr.label}:</span>{" "}
                 The Sun’s peculiar motion relative to nearby stars (~{lsr.kms.toFixed(1)} km/s, {lsr.pitchAU} AU/yr).
-              </li>
-              <li>
-                <span className="font-semibold text-slate-200">
-                  {tight.label} ({tight.angle}°):
-                </span>{" "}
-                Compresses the forward axis so Earth’s spiral turns are tightly stacked for geometric inspection.
               </li>
             </ul>
           </section>

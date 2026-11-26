@@ -1,6 +1,6 @@
 # Orbits
 
-An interactive 3D view of Earth's path through space. As the Sun moves through the galaxy, Earth's orbit stretches into a helix. You can switch between reference frames (the Sun's galactic orbit, its motion relative to nearby stars, or a tightly coiled demo), change the Sun's speed and the time span, and add the Moon and the other planets.
+An interactive 3D view of Earth's path through space. As the Sun moves through the galaxy, Earth's orbit stretches into a helix. You can switch between reference frames (the Sun's galactic orbit or its motion relative to nearby stars), change the Sun's speed and the time span, and add the Moon and the other planets.
 
 The radial and axial directions share one scale, so the helix angle you see is the true angle.
 

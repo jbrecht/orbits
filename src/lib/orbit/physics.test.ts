@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ORBIT_RADIUS_AU, RADIUS_UNITS, SWEEP_SECONDS } from "./constants";
+import { CIRCUMFERENCE_AU, ORBIT_RADIUS_AU, RADIUS_UNITS, SWEEP_SECONDS } from "./constants";
 import {
   advancePhase,
   axialScale,
-  helixAngleDeg,
   helixFrame,
   orbitOffset,
   rescalePhase,
@@ -14,12 +13,11 @@ import { PRESETS, INITIAL_VIEW, formatBodyLabel } from "./view";
 
 describe("presets", () => {
   it.each([
-    ["galactic", 83.2],
-    ["lsr", 33.2],
-    ["tight", 10.0],
-  ])("%s has a %s° helix angle", (id, angle) => {
+    ["galactic", 251.0],
+    ["lsr", 19.5],
+  ])("%s moves the Sun at ~%s km/s", (id, kms) => {
     const preset = PRESETS.find((p) => p.id === id)!;
-    expect(helixAngleDeg(preset.pitchAU).toFixed(1)).toBe(angle.toFixed(1));
+    expect(sunSpeedKms(preset.pitchAU).toFixed(1)).toBe(kms.toFixed(1));
   });
 
   it("starts on the galactic preset, at ~251 km/s and 1.00× scale", () => {
@@ -45,8 +43,8 @@ describe("helix geometry", () => {
 
     const pitchAU = 4.11;
     const drawnCircumference = 2 * Math.PI * RADIUS_UNITS;
-    const drawnAngle = (Math.atan(helixFrame(pitchAU, 1).pitchUnits / drawnCircumference) * 180) / Math.PI;
-    expect(drawnAngle).toBeCloseTo(helixAngleDeg(pitchAU), 10);
+    const drawnAngle = Math.atan(helixFrame(pitchAU, 1).pitchUnits / drawnCircumference);
+    expect(drawnAngle).toBeCloseTo(Math.atan(pitchAU / CIRCUMFERENCE_AU), 10);
   });
 
   it("returns a body to its start after one period", () => {
