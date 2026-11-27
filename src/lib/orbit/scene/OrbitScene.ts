@@ -11,10 +11,11 @@ import { fadeOverlappingLabels, type LabelBox } from "../labelLayout";
 import { sceneBounds } from "../cameraFit";
 import { advancePhase, axisExtension, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
 import { formatElapsed, INITIAL_PHASE_YEARS, isPlanetVisible, labelsVisible, type ViewState } from "../view";
+import { decodeStars } from "../sky";
 import { OrbitCameraController } from "./OrbitCameraController";
+import { SkyField } from "./SkyField";
 import {
   ParametricCurve,
-  createStarfield,
   disposeTree,
   makeArrowHead,
   makeCurveLine,
@@ -96,11 +97,13 @@ export class OrbitScene {
   private readonly earthTether: THREE.Line;
   private readonly movingPlaneRing: THREE.Mesh;
   private readonly planets: PlanetObjects[];
+  private readonly sky = new SkyField();
 
   private view: ViewState;
   private phase = INITIAL_PHASE_YEARS;
   private frameId = 0;
   private lastTime: number | null = null;
+  private disposed = false;
   private width = 1;
   private height = 1;
   private elapsedText = "";
@@ -134,7 +137,9 @@ export class OrbitScene {
     const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.7 * LEGACY_LIGHT_SCALE);
     rimLight.position.set(20, 40, -30);
     this.scene.add(rimLight);
-    this.scene.add(createStarfield());
+    this.sky.setFrame(initialView.skyFrame);
+    this.scene.add(this.sky.group);
+    this.loadStars();
 
     this.scene.add(this.helixGroup);
 
@@ -234,6 +239,7 @@ export class OrbitScene {
       this.phase = rescalePhase(this.phase, prev.spanYears, next.spanYears);
     }
     this.view = next;
+    if (next.skyFrame !== prev.skyFrame) this.sky.setFrame(next.skyFrame);
     if (helixInputsChanged(prev, next)) this.rebuildHelix();
   }
 
@@ -247,6 +253,7 @@ export class OrbitScene {
   }
 
   dispose() {
+    this.disposed = true;
     cancelAnimationFrame(this.frameId);
     this.resizeObserver.disconnect();
     this.labelObserver.disconnect();
@@ -255,6 +262,18 @@ export class OrbitScene {
     this.renderer.dispose();
     this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
+  }
+
+  /** The sky stays empty until the catalogue arrives, and if it can't be loaded. */
+  private async loadStars() {
+    try {
+      const response = await fetch("/stars.bin");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const catalog = decodeStars(await response.arrayBuffer());
+      if (!this.disposed) this.sky.setCatalog(catalog);
+    } catch (err) {
+      console.warn("Couldn't load the star catalogue:", err);
+    }
   }
 
   private createPlanet(config: PlanetConfig): PlanetObjects {
@@ -383,6 +402,7 @@ export class OrbitScene {
     const dt = this.lastTime === null ? 0 : Math.min((now - this.lastTime) / 1000, 0.05);
     this.lastTime = now;
     this.controls.tick(dt);
+    this.sky.followCamera(this.camera);
 
     const view = this.view;
     if (view.isPlaying) {

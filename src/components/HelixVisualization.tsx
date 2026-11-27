@@ -105,7 +105,7 @@ export function HelixVisualization() {
 
   const selectPreset = (id: PresetId) => {
     const preset = PRESETS.find((p) => p.id === id)!;
-    patch({ pitchAU: preset.pitchAU, preset: id });
+    patch({ pitchAU: preset.pitchAU, preset: id, skyFrame: id });
     refit();
   };
 

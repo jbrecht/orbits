@@ -30,6 +30,8 @@ export interface ViewState {
   showNames: boolean;
   /** null once the pitch slider moves off a preset. */
   preset: PresetId | null;
+  /** The frame the sky is turned to, so the arrow points at its apex. The last preset chosen. */
+  skyFrame: PresetId;
 }
 
 export const INITIAL_VIEW: ViewState = {
@@ -43,6 +45,7 @@ export const INITIAL_VIEW: ViewState = {
   showSymbols: false,
   showNames: true,
   preset: "lsr",
+  skyFrame: "lsr",
 };
 
 export const INITIAL_PHASE_YEARS = 0.35;
