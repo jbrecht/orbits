@@ -5,7 +5,9 @@ import { cameraKey, keyBelongsToTarget, type CameraKey } from "../keyboard";
 const DEFAULT_THETA = 0.52;
 const DEFAULT_PHI = 1.18;
 /** The share of the visible area a fitted scene fills. */
-const FIT_FILL = 0.92;
+export const FIT_FILL = 0.92;
+/** The farthest the wheel, a pinch or the keys zoom out, unless a fit needed more. */
+export const MAX_ZOOM_OUT = 18000;
 /** How fast held keys move the camera: radians, CSS pixels (as a drag) and e-folds of distance per second. */
 const KEY_ORBIT_RATE = 1.1;
 const KEY_PAN_RATE = 420;
@@ -21,6 +23,10 @@ export class OrbitCameraController {
   private radius = 260;
   private theta = DEFAULT_THETA;
   private phi = DEFAULT_PHI;
+  /** Raised by a fit that needs to be further back than `MAX_ZOOM_OUT`, so zooming can't undo it. */
+  private maxRadius = MAX_ZOOM_OUT;
+  /** The far plane the camera came with, kept unless a fit needs more. */
+  private readonly baseFar: number;
 
   private isDragging = false;
   private isPanning = false;
@@ -38,6 +44,7 @@ export class OrbitCameraController {
     private readonly camera: THREE.PerspectiveCamera,
     private readonly element: HTMLElement,
   ) {
+    this.baseFar = camera.far;
     element.addEventListener("mousedown", this.onMouseDown);
     window.addEventListener("mousemove", this.onMouseMove);
     window.addEventListener("mouseup", this.onMouseUp);
@@ -85,19 +92,34 @@ export class OrbitCameraController {
     this.update();
   }
 
-  /** Returns to the default angles, centred on `bounds` and far enough back to show all of it. */
-  fitTo(bounds: Bounds, view: Pick<FitOptions, "fovDeg" | "aspect" | "visibleFraction">) {
-    const fit = fitBounds(bounds, { ...view, theta: DEFAULT_THETA, phi: DEFAULT_PHI, fill: FIT_FILL });
+  /**
+   * Centres on `bounds`, far enough back to show all of it. Returns to the
+   * default angles unless `keepAngle` is set, when it looks from where it is.
+   * Returns the camera's distance from the box's centre.
+   */
+  fitTo(bounds: Bounds, view: Pick<FitOptions, "fovDeg" | "aspect" | "visibleFraction">, keepAngle = false): number {
+    if (!keepAngle) {
+      this.theta = DEFAULT_THETA;
+      this.phi = DEFAULT_PHI;
+    }
+    const fit = fitBounds(bounds, { ...view, theta: this.theta, phi: this.phi, fill: FIT_FILL });
     this.target.set(...fit.target);
-    this.theta = DEFAULT_THETA;
-    this.phi = DEFAULT_PHI;
     this.radius = fit.distance;
+    this.maxRadius = Math.max(MAX_ZOOM_OUT, fit.distance);
+    // Far enough to keep the box's farthest corner in front of the far plane, even fully zoomed out.
+    const halfDiagonal = Math.hypot(...[0, 1, 2].map((i) => (bounds.max[i] - bounds.min[i]) / 2));
+    const far = Math.max(this.baseFar, (this.maxRadius + halfDiagonal) * 1.05);
+    if (far !== this.camera.far) {
+      this.camera.far = far;
+      this.camera.updateProjectionMatrix();
+    }
     this.update();
+    return this.radius;
   }
 
   private update() {
     this.phi = Math.max(0.12, Math.min(Math.PI - 0.12, this.phi));
-    this.radius = Math.max(6, Math.min(18000, this.radius));
+    this.radius = Math.max(6, Math.min(this.maxRadius, this.radius));
     const sinPhi = Math.sin(this.phi);
     this.camera.position.set(
       this.target.x + this.radius * sinPhi * Math.sin(this.theta),

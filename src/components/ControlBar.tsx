@@ -1,4 +1,4 @@
-import type { ReactNode, Ref } from "react";
+import { useEffect, useEffectEvent, useRef, type ReactNode, type Ref } from "react";
 import { PITCH_RANGE, SPAN_RANGE } from "@/lib/orbit/constants";
 import { SHORTCUT_KEYS } from "@/lib/orbit/keyboard";
 import { axialScale, sunSpeedKms } from "@/lib/orbit/physics";
@@ -16,6 +16,8 @@ interface ControlBarProps {
   onPreset: (id: PresetId) => void;
   onPitch: (pitchAU: number) => void;
   onSpan: (spanYears: number) => void;
+  /** Called once a slider's new value is let go of: on pointer release, or after each keyboard step. */
+  onSliderCommit: () => void;
   onTogglePlay: () => void;
   onResetCamera: () => void;
   onToggle: (key: ToggleKey) => void;
@@ -34,6 +36,7 @@ export function ControlBar({
   onPreset,
   onPitch,
   onSpan,
+  onSliderCommit,
   onTogglePlay,
   onResetCamera,
   onToggle,
@@ -56,6 +59,7 @@ export function ControlBar({
               range={PITCH_RANGE}
               value={view.pitchAU}
               onChange={onPitch}
+              onCommit={onSliderCommit}
             />
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Reference frame">
               {PRESETS.map((p) => {
@@ -91,6 +95,7 @@ export function ControlBar({
               range={SPAN_RANGE}
               value={view.spanYears}
               onChange={onSpan}
+              onCommit={onSliderCommit}
             />
             <div className="flex items-center gap-1.5">
               <button
@@ -151,6 +156,7 @@ function Slider({
   range,
   value,
   onChange,
+  onCommit,
 }: {
   id: string;
   label: string;
@@ -159,7 +165,18 @@ function Slider({
   range: { min: number; max: number; step: number };
   value: number;
   onChange: (value: number) => void;
+  onCommit: () => void;
 }) {
+  // React's onChange fires on every input event; the native change event fires only once the value is let go of.
+  const inputRef = useRef<HTMLInputElement>(null);
+  const commit = useEffectEvent(onCommit);
+  useEffect(() => {
+    const input = inputRef.current!;
+    const onNativeChange = () => commit();
+    input.addEventListener("change", onNativeChange);
+    return () => input.removeEventListener("change", onNativeChange);
+  }, []);
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex justify-between gap-2 text-xs">
@@ -169,6 +186,7 @@ function Slider({
         <span className={`shrink-0 font-mono font-semibold tabular-nums ${valueColor}`}>{valueText}</span>
       </div>
       <input
+        ref={inputRef}
         id={id}
         type="range"
         min={range.min}
