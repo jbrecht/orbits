@@ -382,6 +382,7 @@ export class OrbitScene {
     this.frameId = requestAnimationFrame(this.frame);
     const dt = this.lastTime === null ? 0 : Math.min((now - this.lastTime) / 1000, 0.05);
     this.lastTime = now;
+    this.controls.tick(dt);
 
     const view = this.view;
     if (view.isPlaying) {

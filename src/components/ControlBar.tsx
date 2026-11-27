@@ -1,5 +1,6 @@
 import type { ReactNode, Ref } from "react";
 import { PITCH_RANGE, SPAN_RANGE } from "@/lib/orbit/constants";
+import { SHORTCUT_KEYS } from "@/lib/orbit/keyboard";
 import { axialScale, sunSpeedKms } from "@/lib/orbit/physics";
 import { CUSTOM_FRAME_NAME, formatKms, PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
 
@@ -97,6 +98,8 @@ export function ControlBar({
                 onClick={onTogglePlay}
                 disabled={!sceneAvailable}
                 className={`${BUTTON} ${IDLE} px-3 font-semibold text-slate-200`}
+                title={`${view.isPlaying ? "Pause" : "Play"} (Space)`}
+                aria-keyshortcuts={SHORTCUT_KEYS.togglePlay}
               >
                 {view.isPlaying ? "Pause" : "Play"}
               </button>
@@ -129,7 +132,8 @@ export function ControlBar({
             onClick={onResetCamera}
             disabled={!sceneAvailable}
             className={`${BUTTON} ${IDLE} ml-auto px-2.5 font-medium text-slate-300`}
-            title="Refit the camera to the visible orbits"
+            title="Refit the camera to the visible orbits (R)"
+            aria-keyshortcuts={SHORTCUT_KEYS.resetView}
           >
             Reset View
           </button>

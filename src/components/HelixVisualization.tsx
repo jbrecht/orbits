@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { BodyId } from "@/lib/orbit/bodies";
+import { appShortcut, keyBelongsToTarget, SHORTCUT_KEYS, trackFocusOrigin, type AppShortcut } from "@/lib/orbit/keyboard";
 import { OrbitScene } from "@/lib/orbit/scene/OrbitScene";
 import { describeScene, INITIAL_VIEW, PRESETS, type PresetId, type ViewState } from "@/lib/orbit/view";
 import { BodyLabels } from "./BodyLabels";
@@ -78,6 +79,30 @@ export function HelixVisualization() {
   const refit = useCallback(() => setFitRequest((n) => n + 1), []);
   const toggle = (key: ToggleKey) => setView((v) => ({ ...v, [key]: !v[key] }));
 
+  const togglePlay = () => setPlayChoice(!isPlaying);
+
+  const runShortcut = useEffectEvent((shortcut: AppShortcut) => {
+    if (shortcut === "help") setHelpOpen(true);
+    else if (!webglAvailable) return;
+    else if (shortcut === "togglePlay") togglePlay();
+    else refit();
+  });
+  useEffect(() => {
+    const focus = trackFocusOrigin();
+    const onKeyDown = (e: KeyboardEvent) => {
+      const shortcut = appShortcut(e);
+      if (!shortcut || keyBelongsToTarget(e.key, e.target, focus.focusedByKeyboard())) return;
+      // Also stops a clicked button from being pressed again by Space.
+      e.preventDefault();
+      if (!e.repeat) runShortcut(shortcut);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      focus.dispose();
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
   const selectPreset = (id: PresetId) => {
     const preset = PRESETS.find((p) => p.id === id)!;
     patch({ pitchAU: preset.pitchAU, preset: id });
@@ -99,8 +124,9 @@ export function HelixVisualization() {
         type="button"
         onClick={() => setHelpOpen(true)}
         className="glass-panel fixed top-3 right-3 z-20 flex size-9 items-center justify-center rounded-full text-sm font-bold text-slate-200 transition hover:border-slate-400/50 hover:text-white sm:top-5 sm:right-5"
-        title="Help"
+        title="Help (?)"
         aria-label="Help"
+        aria-keyshortcuts={SHORTCUT_KEYS.help}
       >
         ?
       </button>
@@ -117,7 +143,7 @@ export function HelixVisualization() {
           patch({ spanYears });
           refit();
         }}
-        onTogglePlay={() => setPlayChoice(!isPlaying)}
+        onTogglePlay={togglePlay}
         onResetCamera={refit}
         onToggle={toggle}
       />

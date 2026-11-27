@@ -12,6 +12,12 @@ const Code = ({ children }: { children: ReactNode }) => (
   <code className="font-mono text-slate-200">{children}</code>
 );
 
+const Kbd = ({ children }: { children: ReactNode }) => (
+  <kbd className="rounded border border-slate-600 bg-slate-800 px-1 font-mono text-[0.6875rem] text-slate-200">
+    {children}
+  </kbd>
+);
+
 /**
  * A native modal <dialog>: the browser traps focus, closes it on Escape and
  * returns focus to the Help button. Every way of closing it goes through the
@@ -84,14 +90,32 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           </section>
 
           <section>
-            <h3 className="mb-1 font-semibold text-white">Camera</h3>
+            <h3 className="mb-1 font-semibold text-white">Camera & Keyboard</h3>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-slate-400">
-              <dt className="font-medium text-slate-200">Drag</dt>
+              <dt className="font-medium text-slate-200">
+                Drag, or <Kbd>←</Kbd> <Kbd>→</Kbd> <Kbd>↑</Kbd> <Kbd>↓</Kbd>
+              </dt>
               <dd>Orbit around the Sun’s path</dd>
-              <dt className="font-medium text-slate-200">Scroll or pinch</dt>
+              <dt className="font-medium text-slate-200">
+                Scroll or pinch, or <Kbd>+</Kbd> <Kbd>−</Kbd>
+              </dt>
               <dd>Zoom in and out</dd>
-              <dt className="font-medium text-slate-200">Shift‑drag or right‑drag</dt>
+              <dt className="font-medium text-slate-200">
+                Shift‑drag or right‑drag, or <Kbd>Shift</Kbd> + arrows
+              </dt>
               <dd>Pan the view</dd>
+              <dt className="font-medium text-slate-200">
+                <Kbd>Space</Kbd>
+              </dt>
+              <dd>Pause or play</dd>
+              <dt className="font-medium text-slate-200">
+                <Kbd>R</Kbd>
+              </dt>
+              <dd>Reset View</dd>
+              <dt className="font-medium text-slate-200">
+                <Kbd>?</Kbd>
+              </dt>
+              <dd>Open this help</dd>
             </dl>
           </section>
 
