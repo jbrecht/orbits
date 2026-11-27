@@ -47,6 +47,11 @@ export const INITIAL_VIEW: ViewState = {
 
 export const INITIAL_PHASE_YEARS = 0.35;
 
+/** How far the animation is along the span, in Earth years. */
+export function formatElapsed(years: number): string {
+  return `t = ${years.toFixed(1)} yrs`;
+}
+
 /** The Sun's speed as shown everywhere: whole km/s from 100 up, one decimal below. */
 export function formatKms(kms: number): string {
   return `${kms >= 100 ? kms.toFixed(0) : kms.toFixed(1)} km/s`;

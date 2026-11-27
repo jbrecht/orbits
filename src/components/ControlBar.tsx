@@ -7,6 +7,8 @@ export type ToggleKey = "showMoon" | "showInnerPlanets" | "showOuterPlanets" | "
 
 interface ControlBarProps {
   ref?: Ref<HTMLElement>;
+  /** Filled in by the scene every frame with how far the animation has got. */
+  elapsedRef?: Ref<HTMLSpanElement>;
   view: ViewState;
   /** False when there is no 3D scene for playback and camera controls to act on. */
   sceneAvailable: boolean;
@@ -23,6 +25,7 @@ const IDLE = "border border-slate-700 bg-slate-800/90 hover:border-slate-600 hov
 
 export function ControlBar({
   ref,
+  elapsedRef,
   view,
   sceneAvailable,
   onPreset,
@@ -95,6 +98,7 @@ export function ControlBar({
               >
                 {view.isPlaying ? "Pause" : "Play"}
               </button>
+              <span ref={elapsedRef} role="timer" className="ml-1.5 font-mono text-xs text-slate-300 tabular-nums" />
             </div>
           </div>
         </div>

@@ -10,7 +10,7 @@ import {
 import { fadeOverlappingLabels, type LabelBox } from "../labelLayout";
 import { sceneBounds } from "../cameraFit";
 import { advancePhase, axisExtension, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
-import { INITIAL_PHASE_YEARS, isPlanetVisible, labelsVisible, type ViewState } from "../view";
+import { formatElapsed, INITIAL_PHASE_YEARS, isPlanetVisible, labelsVisible, type ViewState } from "../view";
 import { OrbitCameraController } from "./OrbitCameraController";
 import {
   ParametricCurve,
@@ -38,6 +38,14 @@ THREE.ColorManagement.enabled = false;
 const LEGACY_LIGHT_SCALE = Math.PI;
 
 type LabelElements = Partial<Record<BodyId, HTMLElement | null>>;
+
+/** Page elements outside the canvas that the scene reads or writes. */
+export interface SceneOverlays {
+  /** The control bar: the scene is centred in the space above it. */
+  bottomBar?: HTMLElement | null;
+  /** Shows how far along the span the animation is, rewritten as it changes. */
+  elapsed?: HTMLElement | null;
+}
 
 interface LabelSlot extends LabelBox {
   el: HTMLElement;
@@ -95,6 +103,7 @@ export class OrbitScene {
   private lastTime: number | null = null;
   private width = 1;
   private height = 1;
+  private elapsedText = "";
   /** CSS pixels at the bottom of the view covered by the control bar. */
   private bottomInset = 0;
   private readonly tempVec = new THREE.Vector3();
@@ -105,8 +114,7 @@ export class OrbitScene {
     private readonly container: HTMLElement,
     private readonly labels: LabelElements,
     initialView: ViewState,
-    /** The control bar: the scene is centred in the space above it. */
-    private readonly bottomBar: HTMLElement | null = null,
+    private readonly overlays: SceneOverlays = {},
   ) {
     this.view = initialView;
 
@@ -210,7 +218,7 @@ export class OrbitScene {
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
-    if (bottomBar) this.resizeObserver.observe(bottomBar);
+    if (overlays.bottomBar) this.resizeObserver.observe(overlays.bottomBar);
     this.resize();
 
     this.rebuildHelix();
@@ -353,7 +361,7 @@ export class OrbitScene {
     this.width = Math.max(1, this.container.clientWidth);
     this.height = Math.max(1, this.container.clientHeight);
     this.camera.aspect = this.width / this.height;
-    const bar = this.bottomBar?.getBoundingClientRect();
+    const bar = this.overlays.bottomBar?.getBoundingClientRect();
     const bottom = this.container.getBoundingClientRect().bottom;
     this.bottomInset = bar ? Math.min(Math.max(0, bottom - bar.top), this.height / 2) : 0;
     // Render a window shifted down by half the inset, which moves the scene's centre up by as much.
@@ -378,6 +386,11 @@ export class OrbitScene {
     const view = this.view;
     if (view.isPlaying) {
       this.phase = advancePhase(this.phase, dt, view.spanYears, SWEEP_SECONDS);
+    }
+    const elapsed = formatElapsed(this.phase);
+    if (elapsed !== this.elapsedText && this.overlays.elapsed) {
+      this.overlays.elapsed.textContent = elapsed;
+      this.elapsedText = elapsed;
     }
 
     const frame = helixFrame(view.pitchAU, view.spanYears);

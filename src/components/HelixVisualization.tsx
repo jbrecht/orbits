@@ -48,11 +48,15 @@ export function HelixVisualization() {
   const labelsRef = useRef<Partial<Record<BodyId, HTMLElement | null>>>({});
   const sceneRef = useRef<OrbitScene | null>(null);
   const barRef = useRef<HTMLElement>(null);
+  const elapsedRef = useRef<HTMLSpanElement>(null);
   const appliedFit = useRef(0);
 
   useEffect(() => {
     if (!supportsWebGL2()) return;
-    const scene = new OrbitScene(containerRef.current!, labelsRef.current, INITIAL_VIEW, barRef.current);
+    const scene = new OrbitScene(containerRef.current!, labelsRef.current, INITIAL_VIEW, {
+      bottomBar: barRef.current,
+      elapsed: elapsedRef.current,
+    });
     sceneRef.current = scene;
     return () => {
       scene.dispose();
@@ -104,6 +108,7 @@ export function HelixVisualization() {
 
       <ControlBar
         ref={barRef}
+        elapsedRef={elapsedRef}
         view={view}
         sceneAvailable={webglAvailable}
         onPreset={selectPreset}

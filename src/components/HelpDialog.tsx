@@ -124,7 +124,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
               </li>
               <li>
                 <span className="font-semibold text-emerald-300">Pause / Play & Reset View:</span> Freezes or resumes
-                motion along the path, or reframes the camera to fit the visible orbits.
+                motion along the path, or reframes the camera to fit the visible orbits. The counter next to Pause shows how
+                many years into the span the bodies are.
               </li>
             </ul>
           </section>

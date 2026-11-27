@@ -9,7 +9,7 @@ import {
   sunSpeedKms,
   sunX,
 } from "./physics";
-import { PRESETS, INITIAL_VIEW, describeScene, formatBodyLabel, formatKms } from "./view";
+import { PRESETS, INITIAL_VIEW, describeScene, formatBodyLabel, formatElapsed, formatKms } from "./view";
 
 describe("presets", () => {
   it.each([
@@ -88,6 +88,13 @@ describe("labels", () => {
     [false, false, ""],
   ])("symbols=%s names=%s → %j", (showSymbols, showNames, expected) => {
     expect(formatBodyLabel({ ...INITIAL_VIEW, showSymbols, showNames }, "☉", "Sun")).toBe(expected);
+  });
+});
+
+describe("formatElapsed", () => {
+  it("shows years to one decimal", () => {
+    expect(formatElapsed(0.35)).toBe("t = 0.3 yrs");
+    expect(formatElapsed(12)).toBe("t = 12.0 yrs");
   });
 });
 
