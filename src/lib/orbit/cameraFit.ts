@@ -10,8 +10,8 @@ export interface Bounds {
   max: Vec3;
 }
 
-/** Room for the bodies' spheres (the Sun's glow is the largest) around their paths. */
-const SPHERE_PAD = 1.6;
+/** Room for the bodies' spheres around their paths. Saturn's rings reach farthest: 2.35 × its 0.78 radius. */
+const SPHERE_PAD = 1.85;
 const ARC_SAMPLES = 48;
 
 /**

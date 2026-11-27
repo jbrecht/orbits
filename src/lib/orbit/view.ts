@@ -71,7 +71,7 @@ export function describeScene(view: ViewState): string {
   for (const p of PLANETS) if (isPlanetVisible(view, p)) bodies.push(p.name);
   const list = bodies.length === 1 ? bodies[0] : `${bodies.slice(0, -1).join(", ")} and ${bodies.at(-1)}`;
   const paths = bodies.length === 1 ? "path" : "paths";
-  return `Helical ${paths} of ${list} around the Sun’s straight path, over ${view.spanYears} years`;
+  return `Helical ${paths} of ${list} around the Sun’s straight path, over ${view.spanYears} ${view.spanYears === 1 ? "year" : "years"}`;
 }
 
 export function formatBodyLabel(view: ViewState, symbol: string, name: string): string {

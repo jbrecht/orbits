@@ -87,6 +87,8 @@ function helixInputsChanged(a: ViewState, b: ViewState): boolean {
 export class OrbitScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
+  /** Drawn first, on its own, so the stars are always behind everything in `scene`. */
+  private readonly skyScene = new THREE.Scene();
   private readonly camera: THREE.PerspectiveCamera;
   private readonly controls: OrbitCameraController;
   private readonly resizeObserver: ResizeObserver;
@@ -136,6 +138,7 @@ export class OrbitScene {
     this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(BACKGROUND, 1);
+    this.renderer.autoClear = false;
     container.appendChild(this.renderer.domElement);
 
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 30000);
@@ -149,7 +152,7 @@ export class OrbitScene {
     rimLight.position.set(20, 40, -30);
     this.scene.add(rimLight);
     this.sky.setFrame(initialView.skyFrame);
-    this.scene.add(this.sky.group);
+    this.skyScene.add(this.sky.group);
     this.loadStars();
 
     this.scene.add(this.helixGroup);
@@ -273,6 +276,7 @@ export class OrbitScene {
     this.labelObserver.disconnect();
     this.controls.dispose();
     disposeTree(this.scene);
+    disposeTree(this.skyScene);
     this.renderer.dispose();
     this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
@@ -410,7 +414,7 @@ export class OrbitScene {
     this.lineResolution.set(this.width, this.height);
     setLineResolution(this.helixGroup, this.lineResolution);
     // ResizeObserver fires after this frame rendered and setSize cleared it.
-    this.renderer.render(this.scene, this.camera);
+    this.render();
   }
 
   private frame = (now: number) => {
@@ -472,8 +476,15 @@ export class OrbitScene {
     this.placeApexLabel();
     this.applyLabels();
 
-    this.renderer.render(this.scene, this.camera);
+    this.render();
   };
+
+  private render() {
+    this.renderer.clear();
+    this.renderer.render(this.skyScene, this.camera);
+    this.renderer.clearDepth();
+    this.renderer.render(this.scene, this.camera);
+  }
 
   private hideLabel(id: BodyId) {
     const slot = this.labelSlotById[id];

@@ -10,7 +10,7 @@ export interface LabelBox {
   /** A higher priority wins an overlap whatever the depth. */
   priority?: number;
   shown: boolean;
-  /** Output: the label overlaps a nearer label that is itself not faded. */
+  /** Output: the label overlaps one that wins over it (see `fadeOverlappingLabels`) and is itself not faded. */
   faded: boolean;
 }
 

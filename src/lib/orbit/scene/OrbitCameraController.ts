@@ -152,6 +152,8 @@ export class OrbitCameraController {
   };
 
   private onKeyDown = (e: KeyboardEvent) => {
+    // On macOS no keyup arrives for a key released while Cmd is down, so it would stay held.
+    if (e.metaKey) this.heldKeys.clear();
     const key = cameraKey(e);
     if (!key || keyBelongsToTarget(e.key, e.target)) return;
     e.preventDefault();
@@ -159,7 +161,8 @@ export class OrbitCameraController {
   };
 
   private onKeyUp = (e: KeyboardEvent) => {
-    this.heldKeys.delete(e.code);
+    if (e.key === "Meta") this.heldKeys.clear();
+    else this.heldKeys.delete(e.code);
   };
 
   /** Key releases aren't seen while the window is in the background. */

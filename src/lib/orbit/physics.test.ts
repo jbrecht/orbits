@@ -114,6 +114,12 @@ describe("describeScene", () => {
     expect(describeScene(INITIAL_VIEW)).toBe("Helical path of Earth around the Sun’s straight path, over 2 years");
   });
 
+  it("says year for a one-year span", () => {
+    expect(describeScene({ ...INITIAL_VIEW, spanYears: 1 })).toBe(
+      "Helical path of Earth around the Sun’s straight path, over 1 year",
+    );
+  });
+
   it("lists every body shown", () => {
     const view = { ...INITIAL_VIEW, showMoon: true, showInnerPlanets: true };
     expect(describeScene(view)).toBe(

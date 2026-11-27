@@ -10,7 +10,7 @@ import {
 import type { PresetId } from "../view";
 import { roundStarTexture } from "./geometry";
 
-/** Inside the camera's far plane. The sky moves with the camera, so this is only a drawing distance. */
+/** Inside the camera's far plane. The sky is drawn before the scene, in its own pass, so this doesn't decide what it hides. */
 const SKY_RADIUS = 10000;
 
 /**

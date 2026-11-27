@@ -85,7 +85,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
             </p>
             <p className="mt-1.5 text-slate-400">
               The dashed yellow line and its arrow are the Sun’s straight path. The faint blue ring is Earth’s orbit
-              around where the Sun is now, and the dotted lines join each body to what it orbits.
+              around where the Sun is now. Dashed lines join each planet to the Sun, and a solid line joins the Moon to
+              Earth.
             </p>
             <p className="mt-1.5 text-slate-400">
               The stars are the real night sky, the ones bright enough to see by eye, turned so the arrow points where
