@@ -115,8 +115,35 @@ export function createStarfield(count = 2800): THREE.Points {
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
   return new THREE.Points(
     geo,
-    new THREE.PointsMaterial({ size: 28, vertexColors: true, transparent: true, opacity: 0.85 }),
+    new THREE.PointsMaterial({
+      // Larger than the old square points, since the disc's soft edge covers less of each one.
+      size: 48,
+      map: roundStarTexture(),
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+    }),
   );
+}
+
+/** A white disc that fades out at its edge, so points draw as round stars instead of squares. */
+function roundStarTexture(): THREE.CanvasTexture {
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.45, "rgba(255,255,255,1)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  const texture = new THREE.CanvasTexture(canvas);
+  // Stars are a few pixels across: mipmaps would average the disc into a faint smudge.
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
 }
 
 /** Frees the GPU resources of an object and everything under it. */
@@ -125,7 +152,9 @@ export function disposeTree(root: THREE.Object3D) {
     const mesh = obj as THREE.Mesh;
     mesh.geometry?.dispose();
     const material = mesh.material as THREE.Material | THREE.Material[] | undefined;
-    if (Array.isArray(material)) material.forEach((m) => m.dispose());
-    else material?.dispose();
+    for (const m of Array.isArray(material) ? material : material ? [material] : []) {
+      (m as THREE.Material & { map?: THREE.Texture | null }).map?.dispose();
+      m.dispose();
+    }
   });
 }
