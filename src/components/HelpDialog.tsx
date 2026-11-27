@@ -178,6 +178,10 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
                     the trajectory from <Code>{SPAN_RANGE.min}</Code> to <Code>{SPAN_RANGE.max}</Code> Earth years.
                   </li>
                   <li>
+                    Releasing either slider, or stepping it with the keyboard, reframes the camera to fit, keeping its
+                    angle.
+                  </li>
+                  <li>
                     <span className="font-semibold text-slate-200">Pause / Play & Reset View:</span> Freezes or resumes
                     motion along the path, or reframes the camera to fit the visible orbits. The counter next to Pause shows how
                     many years into the span the bodies are.

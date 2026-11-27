@@ -64,6 +64,27 @@ describe("fitBounds", () => {
     expect(tightest).toBeCloseTo(1, 6);
   });
 
+  it.each([
+    ["end-on", Math.PI / 2, Math.PI / 2],
+    ["side-on", 0, Math.PI / 2],
+    ["from above, axis up the screen", Math.PI / 2, 0.12],
+    ["from below, axis up the screen", Math.PI / 2, Math.PI - 0.12],
+    ["past a full turn", 0.52 + 4 * Math.PI, 1.18],
+    ["at a negative angle", -2.3, 0.9],
+  ])("keeps every corner inside the visible area, touching its edge, seen %s", (_, theta, phi) => {
+    const o = { ...OPTIONS, theta, phi };
+    const corners = projectCorners(sceneBounds({ ...INITIAL_VIEW, pitchAU: 52.95, showOuterPlanets: true }), o);
+    const xLimit = o.fill;
+    const yLimit = o.fill * o.visibleFraction;
+    for (const p of corners) {
+      expect(Math.abs(p.x)).toBeLessThanOrEqual(xLimit + 1e-9);
+      expect(Math.abs(p.y)).toBeLessThanOrEqual(yLimit + 1e-9);
+      expect(p.z).toBeLessThan(1);
+    }
+    const tightest = Math.max(...corners.map((p) => Math.max(Math.abs(p.x) / xLimit, Math.abs(p.y) / yLimit)));
+    expect(tightest).toBeCloseTo(1, 6);
+  });
+
   it("backs off further when the control bar covers more of the view", () => {
     const bounds = sceneBounds({ ...INITIAL_VIEW, showOuterPlanets: true });
     const open = fitBounds(bounds, { ...OPTIONS, visibleFraction: 1 }).distance;

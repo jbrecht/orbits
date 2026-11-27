@@ -22,6 +22,10 @@ function supportsWebGL2(): boolean {
   return webgl2Support;
 }
 
+interface FitRequest {
+  keepAngle: boolean;
+}
+
 const subscribeNever = () => () => {};
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
@@ -39,8 +43,8 @@ export function HelixVisualization() {
   const reducedMotion = useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion, () => false);
   const isPlaying = playChoice ?? !reducedMotion;
   const view = useMemo(() => ({ ...chosenView, isPlaying }), [chosenView, isPlaying]);
-  // Bumped whenever the camera should refit after the view is applied.
-  const [fitRequest, setFitRequest] = useState(0);
+  // Replaced whenever the camera should refit after the view is applied.
+  const [fitRequest, setFitRequest] = useState<FitRequest | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   // The prerendered page assumes support; the browser corrects it after hydration.
   const webglAvailable = useSyncExternalStore(subscribeNever, supportsWebGL2, () => true);
@@ -51,7 +55,7 @@ export function HelixVisualization() {
   const barRef = useRef<HTMLElement>(null);
   const elapsedRef = useRef<HTMLSpanElement>(null);
   const apexRef = useRef<HTMLDivElement>(null);
-  const appliedFit = useRef(0);
+  const appliedFit = useRef<FitRequest | null>(null);
 
   useEffect(() => {
     if (!supportsWebGL2()) return;
@@ -71,14 +75,16 @@ export function HelixVisualization() {
     const scene = sceneRef.current;
     if (!scene) return;
     scene.update(view);
-    if (fitRequest !== appliedFit.current) {
+    if (fitRequest && fitRequest !== appliedFit.current) {
       appliedFit.current = fitRequest;
-      scene.fitCamera();
+      scene.fitCamera(fitRequest.keepAngle);
     }
   }, [view, fitRequest]);
 
   const patch = useCallback((changes: Partial<ViewState>) => setView((v) => ({ ...v, ...changes })), []);
-  const refit = useCallback(() => setFitRequest((n) => n + 1), []);
+  // Buttons and R reset the camera's angle; letting go of a slider keeps it.
+  const refit = useCallback(() => setFitRequest({ keepAngle: false }), []);
+  const refitKeepingAngle = useCallback(() => setFitRequest({ keepAngle: true }), []);
   const toggle = (key: ToggleKey) => setView((v) => ({ ...v, [key]: !v[key] }));
 
   const togglePlay = () => setPlayChoice(!isPlaying);
@@ -141,10 +147,8 @@ export function HelixVisualization() {
         sceneAvailable={webglAvailable}
         onPreset={selectPreset}
         onPitch={(pitchAU) => patch({ pitchAU, preset: null })}
-        onSpan={(spanYears) => {
-          patch({ spanYears });
-          refit();
-        }}
+        onSpan={(spanYears) => patch({ spanYears })}
+        onSliderCommit={refitKeepingAngle}
         onTogglePlay={togglePlay}
         onResetCamera={refit}
         onToggle={toggle}

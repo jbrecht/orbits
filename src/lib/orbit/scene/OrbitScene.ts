@@ -12,7 +12,7 @@ import { sceneBounds } from "../cameraFit";
 import { advancePhase, axisExtension, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
 import { formatElapsed, INITIAL_PHASE_YEARS, isPlanetVisible, labelsVisible, type ViewState } from "../view";
 import { decodeStars } from "../sky";
-import { OrbitCameraController } from "./OrbitCameraController";
+import { MAX_ZOOM_OUT, OrbitCameraController } from "./OrbitCameraController";
 import { SkyField } from "./SkyField";
 import {
   ParametricCurve,
@@ -26,6 +26,7 @@ import {
 } from "./geometry";
 
 const BACKGROUND = 0x050811;
+const FOG_DENSITY = 0.000045;
 
 /**
  * The prototype was written against Three.js r128, before physically based
@@ -89,6 +90,7 @@ export class OrbitScene {
   private readonly scene = new THREE.Scene();
   /** Drawn first, on its own, so the stars are always behind everything in `scene`. */
   private readonly skyScene = new THREE.Scene();
+  private readonly fog = new THREE.FogExp2(BACKGROUND, FOG_DENSITY);
   private readonly camera: THREE.PerspectiveCamera;
   private readonly controls: OrbitCameraController;
   private readonly resizeObserver: ResizeObserver;
@@ -143,7 +145,7 @@ export class OrbitScene {
 
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 30000);
     this.controls = new OrbitCameraController(this.camera, this.renderer.domElement);
-    this.scene.fog = new THREE.FogExp2(BACKGROUND, 0.000045);
+    this.scene.fog = this.fog;
 
     this.scene.add(new THREE.AmbientLight(0x334155, 1.4 * LEGACY_LIGHT_SCALE));
     this.sunLight = new THREE.PointLight(0xfff3c4, 2.8 * LEGACY_LIGHT_SCALE, 300, 0);
@@ -260,13 +262,19 @@ export class OrbitScene {
     if (helixInputsChanged(prev, next)) this.rebuildHelix();
   }
 
-  /** Reframes the camera around the whole visible helix. */
-  fitCamera() {
-    this.controls.fitTo(sceneBounds(this.view), {
-      fovDeg: this.camera.fov,
-      aspect: this.width / this.height,
-      visibleFraction: (this.height - this.bottomInset) / this.height,
-    });
+  /** Reframes the camera around the whole visible helix, from the default angle unless `keepAngle` is set. */
+  fitCamera(keepAngle = false) {
+    const distance = this.controls.fitTo(
+      sceneBounds(this.view),
+      {
+        fovDeg: this.camera.fov,
+        aspect: this.width / this.height,
+        visibleFraction: (this.height - this.bottomInset) / this.height,
+      },
+      keepAngle,
+    );
+    // A fit past the usual zoom-out limit thins the fog to match, so the axis and arrow don't fade into it.
+    this.fog.density = FOG_DENSITY * Math.min(1, MAX_ZOOM_OUT / distance);
   }
 
   dispose() {
