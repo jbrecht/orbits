@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fadeOverlappingLabels, type LabelBox } from "./labelLayout";
+import { beyondTip, fadeOverlappingLabels, type LabelBox } from "./labelLayout";
 
 const box = (x: number, y: number, depth: number, shown = true): LabelBox => ({
   x,
@@ -53,5 +53,19 @@ describe("fadeOverlappingLabels", () => {
     const c = box(200, 100, 0.9);
     fadeOverlappingLabels([c, b, a]);
     expect([a.faded, b.faded, c.faded]).toEqual([false, true, false]);
+  });
+});
+
+describe("beyondTip", () => {
+  it("puts the label past the tip of an arrow pointing right, clear of it", () => {
+    expect(beyondTip({ x: 100, y: 50 }, { x: 80, y: 50 }, 60, 20, 8)).toEqual({ x: 138, y: 50 });
+  });
+
+  it("uses the label's height for an arrow pointing up the screen", () => {
+    expect(beyondTip({ x: 100, y: 50 }, { x: 100, y: 70 }, 60, 20, 8)).toEqual({ x: 100, y: 32 });
+  });
+
+  it("puts the label above an arrow pointing at the camera", () => {
+    expect(beyondTip({ x: 100, y: 50 }, { x: 100.1, y: 50 }, 60, 20, 8)).toEqual({ x: 100, y: 32 });
   });
 });

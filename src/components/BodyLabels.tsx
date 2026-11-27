@@ -1,5 +1,6 @@
-import type { RefObject } from "react";
+import type { Ref, RefObject } from "react";
 import { BODY_LABELS, type BodyId } from "@/lib/orbit/bodies";
+import { APEX_LABELS } from "@/lib/orbit/sky";
 import { formatBodyLabel, labelsVisible, type ViewState } from "@/lib/orbit/view";
 
 const LABEL_STYLES: Record<BodyId, string> = {
@@ -15,13 +16,15 @@ const LABEL_STYLES: Record<BodyId, string> = {
   neptune: "bg-indigo-950/85 text-indigo-200 border-indigo-400/40",
 };
 
-/** HTML labels the scene moves every frame by projecting each body's position. */
+/** HTML labels the scene moves every frame by projecting each body's position, and the arrow's tip. */
 export function BodyLabels({
   view,
   labelRefs,
+  apexRef,
 }: {
   view: ViewState;
   labelRefs: RefObject<Partial<Record<BodyId, HTMLElement | null>>>;
+  apexRef?: Ref<HTMLDivElement>;
 }) {
   // Glyphs alone are hard to tell apart at text size.
   const symbolsOnly = view.showSymbols && !view.showNames;
@@ -43,6 +46,12 @@ export function BodyLabels({
           {formatBodyLabel(view, body.symbol, body.name)}
         </div>
       ))}
+      <div
+        ref={apexRef}
+        className="label-3d border border-yellow-400/25 bg-slate-950/70 px-2 py-0.5 text-xs font-medium text-yellow-200/90 opacity-0"
+      >
+        {APEX_LABELS[view.skyFrame]}
+      </div>
     </div>
   );
 }

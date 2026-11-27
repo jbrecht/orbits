@@ -50,6 +50,7 @@ export function HelixVisualization() {
   const sceneRef = useRef<OrbitScene | null>(null);
   const barRef = useRef<HTMLElement>(null);
   const elapsedRef = useRef<HTMLSpanElement>(null);
+  const apexRef = useRef<HTMLDivElement>(null);
   const appliedFit = useRef(0);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export function HelixVisualization() {
     const scene = new OrbitScene(containerRef.current!, labelsRef.current, INITIAL_VIEW, {
       bottomBar: barRef.current,
       elapsed: elapsedRef.current,
+      apexLabel: apexRef.current,
     });
     sceneRef.current = scene;
     return () => {
@@ -117,7 +119,7 @@ export function HelixVisualization() {
         aria-label={describeScene(view)}
         className="fixed inset-0 z-[1] touch-none [&>canvas]:block [&>canvas]:size-full"
       />
-      <BodyLabels view={view} labelRefs={labelsRef} />
+      <BodyLabels view={view} labelRefs={labelsRef} apexRef={apexRef} />
       <InfoPanel webglAvailable={webglAvailable} />
 
       <button

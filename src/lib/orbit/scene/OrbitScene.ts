@@ -7,7 +7,7 @@ import {
   SWEEP_SECONDS,
   auToUnits,
 } from "../constants";
-import { fadeOverlappingLabels, type LabelBox } from "../labelLayout";
+import { beyondTip, fadeOverlappingLabels, type LabelBox } from "../labelLayout";
 import { sceneBounds } from "../cameraFit";
 import { advancePhase, axisExtension, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
 import { formatElapsed, INITIAL_PHASE_YEARS, isPlanetVisible, labelsVisible, type ViewState } from "../view";
@@ -46,6 +46,8 @@ export interface SceneOverlays {
   bottomBar?: HTMLElement | null;
   /** Shows how far along the span the animation is, rewritten as it changes. */
   elapsed?: HTMLElement | null;
+  /** Says where among the stars the arrow points; placed just past its tip. */
+  apexLabel?: HTMLElement | null;
 }
 
 interface LabelSlot extends LabelBox {
@@ -54,6 +56,10 @@ interface LabelSlot extends LabelBox {
 
 /** Opacity of a label that overlaps one that wins (see `fadeOverlappingLabels`). */
 const FADED_LABEL_OPACITY = 0.2;
+/** The apex label is hidden within this angle (as a cosine, about 20°) of looking along the arrow. */
+const APEX_LABEL_HIDE_COS = Math.cos((20 * Math.PI) / 180);
+/** How far the apex label keeps from the edges of the view, and from the control bar. */
+const APEX_LABEL_MARGIN_PX = 12;
 
 interface PlanetObjects {
   config: PlanetConfig;
@@ -87,6 +93,10 @@ export class OrbitScene {
   private readonly labelObserver: ResizeObserver;
   private readonly labelSlots: LabelSlot[] = [];
   private readonly labelSlotById: Partial<Record<BodyId, LabelSlot>> = {};
+  private readonly apexSlot: LabelSlot | null = null;
+  /** Where the arrowhead's point is on the x axis, and a point a few arrowheads behind it. */
+  private arrowTipX = 0;
+  private arrowBackX = 0;
 
   private readonly helixGroup = new THREE.Group();
   private readonly sunGroup = new THREE.Group();
@@ -110,6 +120,7 @@ export class OrbitScene {
   /** CSS pixels at the bottom of the view covered by the control bar. */
   private bottomInset = 0;
   private readonly tempVec = new THREE.Vector3();
+  private readonly tempVec2 = new THREE.Vector3();
   /** The canvas size in CSS pixels, which line-mode orbit paths need for their width. */
   private readonly lineResolution = new THREE.Vector2(1, 1);
 
@@ -210,16 +221,19 @@ export class OrbitScene {
         slot.height = entry.borderBoxSize[0].blockSize;
       }
     });
-    for (const [id, el] of Object.entries(labels) as [BodyId, HTMLElement | null][]) {
-      if (!el) continue;
-      // Earth is what the page is read from, so its label wins any overlap (notably with the Sun's).
-      const priority = id === "earth" ? 1 : 0;
+    const addSlot = (el: HTMLElement, priority: number): LabelSlot => {
       const slot: LabelSlot = { el, x: 0, y: 0, width: 0, height: 0, depth: 0, priority, shown: false, faded: false };
       this.labelSlots.push(slot);
-      this.labelSlotById[id] = slot;
       slotByElement.set(el, slot);
       this.labelObserver.observe(el);
+      return slot;
+    };
+    for (const [id, el] of Object.entries(labels) as [BodyId, HTMLElement | null][]) {
+      // Earth is what the page is read from, so its label wins any overlap (notably with the Sun's).
+      if (el) this.labelSlotById[id] = addSlot(el, id === "earth" ? 1 : 0);
     }
+    // Any body's label wins over the arrow's.
+    if (overlays.apexLabel) this.apexSlot = addSlot(overlays.apexLabel, -1);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
@@ -328,6 +342,8 @@ export class OrbitScene {
 
     // The Sun's straight-line path.
     const { extend: axisExtend, arrowSize } = axisExtension(frame.totalLength);
+    this.arrowTipX = xEnd + axisExtend + arrowSize / 2;
+    this.arrowBackX = this.arrowTipX - arrowSize * 4;
     this.helixGroup.add(
       makeLine(
         [new THREE.Vector3(frame.xStart - axisExtend, 0, 0), new THREE.Vector3(xEnd + axisExtend, 0, 0)],
@@ -453,6 +469,7 @@ export class OrbitScene {
 
     this.placeLabel("sun", x, -1.75, 0);
     this.placeLabel("earth", x, ey + 1.05, ez);
+    this.placeApexLabel();
     this.applyLabels();
 
     this.renderer.render(this.scene, this.camera);
@@ -474,6 +491,31 @@ export class OrbitScene {
     slot.depth = p.z;
   }
 
+  /**
+   * Puts the apex label just past the arrow's tip, along the arrow's direction on
+   * screen, kept inside the view. Hidden when looking nearly along the arrow,
+   * where its tip lies behind the Sun.
+   */
+  private placeApexLabel() {
+    const slot = this.apexSlot;
+    if (!slot) return;
+    const toTip = this.tempVec.set(this.arrowTipX, 0, 0).sub(this.camera.position);
+    const alongArrow = Math.abs(toTip.x) / toTip.length() > APEX_LABEL_HIDE_COS;
+    const tip = this.tempVec.set(this.arrowTipX, 0, 0).project(this.camera);
+    const back = this.tempVec2.set(this.arrowBackX, 0, 0).project(this.camera);
+    slot.shown = labelsVisible(this.view) && !alongArrow && tip.z <= 1 && back.z <= 1;
+    slot.depth = tip.z;
+    const at = beyondTip(
+      { x: (tip.x * 0.5 + 0.5) * this.width, y: (-tip.y * 0.5 + 0.5) * this.height },
+      { x: (back.x * 0.5 + 0.5) * this.width, y: (-back.y * 0.5 + 0.5) * this.height },
+      slot.width,
+      slot.height,
+    );
+    const m = APEX_LABEL_MARGIN_PX;
+    slot.x = clamp(at.x, slot.width / 2 + m, this.width - slot.width / 2 - m);
+    slot.y = clamp(at.y, slot.height / 2 + m, this.height - this.bottomInset - slot.height / 2 - m);
+  }
+
   /** Fades labels that overlap a winning one and stacks the winners on top. */
   private applyLabels() {
     fadeOverlappingLabels(this.labelSlots);
@@ -490,5 +532,7 @@ export class OrbitScene {
 }
 
 function clampSegments(n: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, Math.round(n)));
+  return clamp(Math.round(n), min, max);
 }
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));

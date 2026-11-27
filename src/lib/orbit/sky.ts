@@ -88,6 +88,12 @@ export const SOLAR_APEX: Record<PresetId, Vec3> = {
   galactic: galactic(90, 0),
 };
 
+/** Shown at the arrow's tip: where among the stars it points. */
+export const APEX_LABELS: Record<PresetId, string> = {
+  lsr: "Toward Hercules, near Vega",
+  galactic: "Toward Cygnus, near Deneb",
+};
+
 const NORTH_GALACTIC_POLE: Vec3 = [0, 0, 1];
 
 /**

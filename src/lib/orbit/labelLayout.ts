@@ -43,3 +43,31 @@ function overlaps(a: LabelBox, b: LabelBox, gapPx: number): boolean {
     Math.abs(a.y - b.y) * 2 < a.height + b.height + 2 * gapPx
   );
 }
+
+/**
+ * The centre for a label that sits just past the tip of an arrow on screen,
+ * clear of it: `tip` and `back` are the tip and a point behind it, in CSS
+ * pixels. An arrow pointing at the camera has no direction on screen, so its
+ * label goes above the tip.
+ */
+export function beyondTip(
+  tip: { x: number; y: number },
+  back: { x: number; y: number },
+  width: number,
+  height: number,
+  gapPx = 8,
+): { x: number; y: number } {
+  let dx = tip.x - back.x;
+  let dy = tip.y - back.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 0.5) {
+    dx = 0;
+    dy = -1;
+  } else {
+    dx /= len;
+    dy /= len;
+  }
+  // How far the box's edge is from its centre along the arrow's direction.
+  const reach = (Math.abs(dx) * width) / 2 + (Math.abs(dy) * height) / 2 + gapPx;
+  return { x: tip.x + dx * reach, y: tip.y + dy * reach };
+}
