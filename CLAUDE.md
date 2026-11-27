@@ -43,3 +43,21 @@ Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, `three` from npm.
 - **Adding a planet** means an entry in `PLANETS` (and its id in `PLANET_IDS`) plus a style in `BodyLabels`' `LABEL_STYLES`, which TypeScript requires.
 - **Colours match the r128 prototype.** `OrbitScene` turns off colour management, renders in linear sRGB and scales light intensities by π. Removing those makes every colour darker and more saturated. The Sun light's falloff still differs: r128 faded it linearly to zero at 300 units, so bodies far from the Sun are now lit somewhat more brightly.
 - Playback speed scales with `spanYears`, so one sweep of the visible helix takes `SWEEP_SECONDS` (10 s) whatever the span.
+
+## Roadmap
+
+The roadmap is GitHub issues, managed with the `kit:roadmap` skill. Each kind of decision lives in
+exactly one place:
+- **Labels** say what kind of work: `bug`/`enhancement` plus areas `physics`, `scene`, `ui` (and `accessibility`). Never priority.
+- **Milestones** are goals worked through in order: Polished on desktop → True to the sky. No milestone means backlog.
+- **Owner:** John, who sets Priority and milestones and approves new issues.
+- **The "Orbits Roadmap" Project** (https://github.com/users/jbrecht/projects/11) holds **Priority** (Now/Next/Later) and
+  **Status** (Todo/In Progress/Done). Card order within a column is the sequence.
+- **Blocked-by links** record real dependencies. Big issues split into sub-issues.
+- **Why** a decision was made goes in the issue, as a "Decision (John, date)" line or a comment.
+
+New work becomes an issue first (labels, milestone, Status Todo); John sets Priority.
+Starting work on an issue: claim it (`roadmap.sh claim N` sets Status to In Progress), and
+put `Fixes #N` in the PR (`Part of #N` while a criterion is deferred or can only be checked
+after merge; `kit:do-issue` step 7 has the rule).
+Change Priority or milestones only with John's approval.
