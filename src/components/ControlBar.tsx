@@ -39,9 +39,9 @@ export function ControlBar({
       ref={ref}
       className="glass-panel fixed right-3 bottom-3 left-3 z-20 rounded-2xl p-3 sm:right-auto sm:bottom-5 sm:left-1/2 sm:w-[94%] sm:max-w-3xl sm:-translate-x-1/2 sm:p-4"
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         <div className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <Slider
               id="slider-pitch"
               label="Sun Speed"
@@ -76,7 +76,7 @@ export function ControlBar({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <Slider
               id="slider-span"
               label="Time Span"
@@ -99,7 +99,7 @@ export function ControlBar({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-700/60 pt-3">
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-700/60 pt-4">
           <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Show">
             <span className="mr-1 text-xs font-semibold text-slate-400">Show:</span>
             <Toggle active={view.showMoon} onClick={() => onToggle("showMoon")}>
@@ -151,7 +151,7 @@ function Slider({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-2">
       <div className="flex justify-between gap-2 text-xs">
         <label htmlFor={id} className="font-medium text-slate-300">
           {label}
@@ -167,7 +167,7 @@ function Slider({
         value={value}
         aria-valuetext={valueText}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full"
+        className="my-1.5 w-full"
       />
     </div>
   );
