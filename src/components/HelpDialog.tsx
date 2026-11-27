@@ -54,7 +54,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
       <div className="max-h-[85vh] overflow-y-auto p-5 sm:p-6">
         <div className="flex items-center justify-between border-b border-slate-700/70 pb-3">
           <div>
-            <span className="text-xs font-semibold tracking-wider text-sky-400 uppercase">Controls & Concepts</span>
+            <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">Controls & Concepts</span>
             <h2 id="help-title" className="text-base font-bold text-white sm:text-lg">
               Reading the Helices
             </h2>
@@ -114,16 +114,16 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
             <h3 className="mb-1 font-semibold text-white">Sliders & Playback</h3>
             <ul className="space-y-1.5 text-slate-400">
               <li>
-                <span className="font-semibold text-amber-300">Sun Speed:</span> Adjusts the Sun’s forward speed,
+                <span className="font-semibold text-slate-200">Sun Speed:</span> Adjusts the Sun’s forward speed,
                 which stretches or compresses the helices along its path. <Code>1.00×</Code> is the true galactic
                 speed.
               </li>
               <li>
-                <span className="font-semibold text-sky-300">Time Span:</span> Sets the total duration rendered along
+                <span className="font-semibold text-slate-200">Time Span:</span> Sets the total duration rendered along
                 the trajectory from <Code>{SPAN_RANGE.min}</Code> to <Code>{SPAN_RANGE.max}</Code> Earth years.
               </li>
               <li>
-                <span className="font-semibold text-emerald-300">Pause / Play & Reset View:</span> Freezes or resumes
+                <span className="font-semibold text-slate-200">Pause / Play & Reset View:</span> Freezes or resumes
                 motion along the path, or reframes the camera to fit the visible orbits. The counter next to Pause shows how
                 many years into the span the bodies are.
               </li>

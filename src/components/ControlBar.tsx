@@ -22,6 +22,8 @@ interface ControlBarProps {
 
 const BUTTON = "rounded-lg py-1.5 text-xs transition disabled:opacity-50";
 const IDLE = "border border-slate-700 bg-slate-800/90 hover:border-slate-600 hover:bg-slate-700";
+/** The "on" look shared by the presets and the Show toggles. Colour is kept for the bodies. */
+const ACTIVE = "border border-transparent bg-slate-200 text-slate-950 hover:bg-white";
 
 export function ControlBar({
   ref,
@@ -49,7 +51,7 @@ export function ControlBar({
               id="slider-pitch"
               label="Sun Speed"
               valueText={`${formatKms(kms)} · ${axialScale(view.pitchAU).toFixed(2)}×`}
-              valueColor="text-amber-300"
+              valueColor="text-slate-200"
               range={PITCH_RANGE}
               value={view.pitchAU}
               onChange={onPitch}
@@ -64,7 +66,7 @@ export function ControlBar({
                     aria-pressed={active}
                     onClick={() => onPreset(p.id)}
                     className={`${BUTTON} px-2.5 font-semibold ${
-                      active ? "border border-transparent bg-sky-500 text-slate-950 shadow-sm" : `${IDLE} text-slate-200`
+                      active ? ACTIVE : `${IDLE} text-slate-300`
                     }`}
                   >
                     {p.label}
@@ -72,7 +74,7 @@ export function ControlBar({
                 );
               })}
               {view.preset === null && (
-                <span className="rounded-full border border-sky-400/30 bg-sky-500/20 px-2 py-0.5 text-xs font-medium text-sky-300">
+                <span className="px-1 text-xs font-medium text-slate-400 italic">
                   {CUSTOM_FRAME_NAME}
                 </span>
               )}
@@ -84,7 +86,7 @@ export function ControlBar({
               id="slider-span"
               label="Time Span"
               valueText={`${view.spanYears.toFixed(1)} yrs`}
-              valueColor="text-sky-300"
+              valueColor="text-slate-200"
               range={SPAN_RANGE}
               value={view.spanYears}
               onChange={onSpan}
@@ -94,7 +96,7 @@ export function ControlBar({
                 type="button"
                 onClick={onTogglePlay}
                 disabled={!sceneAvailable}
-                className={`${BUTTON} border border-emerald-500/40 bg-emerald-500/20 px-3 font-semibold text-emerald-300 hover:bg-emerald-500/30`}
+                className={`${BUTTON} ${IDLE} px-3 font-semibold text-slate-200`}
               >
                 {view.isPlaying ? "Pause" : "Play"}
               </button>
@@ -185,7 +187,7 @@ function Toggle({ active, onClick, children }: { active: boolean; onClick: () =>
       onClick={onClick}
       className={`${BUTTON} px-2.5 ${
         active
-          ? "border border-transparent bg-slate-200 font-semibold text-slate-950 hover:bg-white"
+          ? `${ACTIVE} font-semibold`
           : `${IDLE} font-medium text-slate-300`
       }`}
     >

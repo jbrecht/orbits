@@ -98,7 +98,7 @@ export function HelixVisualization() {
       <button
         type="button"
         onClick={() => setHelpOpen(true)}
-        className="glass-panel fixed top-3 right-3 z-20 flex size-9 items-center justify-center rounded-full text-sm font-bold text-sky-300 transition hover:border-sky-400/50 hover:text-white sm:top-5 sm:right-5"
+        className="glass-panel fixed top-3 right-3 z-20 flex size-9 items-center justify-center rounded-full text-sm font-bold text-slate-200 transition hover:border-slate-400/50 hover:text-white sm:top-5 sm:right-5"
         title="Help"
         aria-label="Help"
       >
