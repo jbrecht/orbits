@@ -69,6 +69,11 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
 }
 
+/* Dissolves a scroll area's bottom edge to show there's more below. */
+@utility fade-bottom {
+  mask-image: linear-gradient(to bottom, black calc(100% - 3rem), transparent calc(100% - 0.5rem));
+}
+
 /* Positioned every frame by OrbitScene. */
 @utility label-3d {
   position: absolute;
