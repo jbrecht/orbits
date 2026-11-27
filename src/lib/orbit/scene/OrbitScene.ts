@@ -7,13 +7,15 @@ import {
   SWEEP_SECONDS,
   auToUnits,
 } from "../constants";
-import { fadeOverlappingLabels, type LabelBox } from "../labelLayout";
-import { advancePhase, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
-import { INITIAL_PHASE_YEARS, labelsVisible, type ViewState } from "../view";
+import { beyondTip, fadeOverlappingLabels, type LabelBox } from "../labelLayout";
+import { sceneBounds } from "../cameraFit";
+import { advancePhase, axisExtension, helixFrame, orbitOffset, rescalePhase, sunX } from "../physics";
+import { formatElapsed, INITIAL_PHASE_YEARS, isPlanetVisible, labelsVisible, type ViewState } from "../view";
+import { decodeStars } from "../sky";
 import { OrbitCameraController } from "./OrbitCameraController";
+import { SkyField } from "./SkyField";
 import {
   ParametricCurve,
-  createStarfield,
   disposeTree,
   makeArrowHead,
   makeCurveLine,
@@ -38,21 +40,31 @@ const LEGACY_LIGHT_SCALE = Math.PI;
 
 type LabelElements = Partial<Record<BodyId, HTMLElement | null>>;
 
+/** Page elements outside the canvas that the scene reads or writes. */
+export interface SceneOverlays {
+  /** The control bar: the scene is centred in the space above it. */
+  bottomBar?: HTMLElement | null;
+  /** Shows how far along the span the animation is, rewritten as it changes. */
+  elapsed?: HTMLElement | null;
+  /** Says where among the stars the arrow points; placed just past its tip. */
+  apexLabel?: HTMLElement | null;
+}
+
 interface LabelSlot extends LabelBox {
   el: HTMLElement;
 }
 
-/** Opacity of a label that overlaps one nearer the camera. */
+/** Opacity of a label that overlaps one that wins (see `fadeOverlappingLabels`). */
 const FADED_LABEL_OPACITY = 0.2;
+/** The apex label is hidden within this angle (as a cosine, about 20°) of looking along the arrow. */
+const APEX_LABEL_HIDE_COS = Math.cos((20 * Math.PI) / 180);
+/** How far the apex label keeps from the edges of the view, and from the control bar. */
+const APEX_LABEL_MARGIN_PX = 12;
 
 interface PlanetObjects {
   config: PlanetConfig;
   group: THREE.Group;
   tether: THREE.Line;
-}
-
-function isPlanetVisible(view: ViewState, planet: PlanetConfig): boolean {
-  return planet.group === "inner" ? view.showInnerPlanets : view.showOuterPlanets;
 }
 
 function helixInputsChanged(a: ViewState, b: ViewState): boolean {
@@ -75,12 +87,18 @@ function helixInputsChanged(a: ViewState, b: ViewState): boolean {
 export class OrbitScene {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
+  /** Drawn first, on its own, so the stars are always behind everything in `scene`. */
+  private readonly skyScene = new THREE.Scene();
   private readonly camera: THREE.PerspectiveCamera;
   private readonly controls: OrbitCameraController;
   private readonly resizeObserver: ResizeObserver;
   private readonly labelObserver: ResizeObserver;
   private readonly labelSlots: LabelSlot[] = [];
   private readonly labelSlotById: Partial<Record<BodyId, LabelSlot>> = {};
+  private readonly apexSlot: LabelSlot | null = null;
+  /** Where the arrowhead's point is on the x axis, and a point a few arrowheads behind it. */
+  private arrowTipX = 0;
+  private arrowBackX = 0;
 
   private readonly helixGroup = new THREE.Group();
   private readonly sunGroup = new THREE.Group();
@@ -91,14 +109,20 @@ export class OrbitScene {
   private readonly earthTether: THREE.Line;
   private readonly movingPlaneRing: THREE.Mesh;
   private readonly planets: PlanetObjects[];
+  private readonly sky = new SkyField();
 
   private view: ViewState;
   private phase = INITIAL_PHASE_YEARS;
   private frameId = 0;
   private lastTime: number | null = null;
+  private disposed = false;
   private width = 1;
   private height = 1;
+  private elapsedText = "";
+  /** CSS pixels at the bottom of the view covered by the control bar. */
+  private bottomInset = 0;
   private readonly tempVec = new THREE.Vector3();
+  private readonly tempVec2 = new THREE.Vector3();
   /** The canvas size in CSS pixels, which line-mode orbit paths need for their width. */
   private readonly lineResolution = new THREE.Vector2(1, 1);
 
@@ -106,6 +130,7 @@ export class OrbitScene {
     private readonly container: HTMLElement,
     private readonly labels: LabelElements,
     initialView: ViewState,
+    private readonly overlays: SceneOverlays = {},
   ) {
     this.view = initialView;
 
@@ -113,6 +138,7 @@ export class OrbitScene {
     this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setClearColor(BACKGROUND, 1);
+    this.renderer.autoClear = false;
     container.appendChild(this.renderer.domElement);
 
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 30000);
@@ -125,7 +151,9 @@ export class OrbitScene {
     const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.7 * LEGACY_LIGHT_SCALE);
     rimLight.position.set(20, 40, -30);
     this.scene.add(rimLight);
-    this.scene.add(createStarfield());
+    this.sky.setFrame(initialView.skyFrame);
+    this.skyScene.add(this.sky.group);
+    this.loadStars();
 
     this.scene.add(this.helixGroup);
 
@@ -196,17 +224,23 @@ export class OrbitScene {
         slot.height = entry.borderBoxSize[0].blockSize;
       }
     });
-    for (const [id, el] of Object.entries(labels) as [BodyId, HTMLElement | null][]) {
-      if (!el) continue;
-      const slot: LabelSlot = { el, x: 0, y: 0, width: 0, height: 0, depth: 0, shown: false, faded: false };
+    const addSlot = (el: HTMLElement, priority: number): LabelSlot => {
+      const slot: LabelSlot = { el, x: 0, y: 0, width: 0, height: 0, depth: 0, priority, shown: false, faded: false };
       this.labelSlots.push(slot);
-      this.labelSlotById[id] = slot;
       slotByElement.set(el, slot);
       this.labelObserver.observe(el);
+      return slot;
+    };
+    for (const [id, el] of Object.entries(labels) as [BodyId, HTMLElement | null][]) {
+      // Earth is what the page is read from, so its label wins any overlap (notably with the Sun's).
+      if (el) this.labelSlotById[id] = addSlot(el, id === "earth" ? 1 : 0);
     }
+    // Any body's label wins over the arrow's.
+    if (overlays.apexLabel) this.apexSlot = addSlot(overlays.apexLabel, -1);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
+    if (overlays.bottomBar) this.resizeObserver.observe(overlays.bottomBar);
     this.resize();
 
     this.rebuildHelix();
@@ -222,23 +256,42 @@ export class OrbitScene {
       this.phase = rescalePhase(this.phase, prev.spanYears, next.spanYears);
     }
     this.view = next;
+    if (next.skyFrame !== prev.skyFrame) this.sky.setFrame(next.skyFrame);
     if (helixInputsChanged(prev, next)) this.rebuildHelix();
   }
 
   /** Reframes the camera around the whole visible helix. */
   fitCamera() {
-    this.controls.fitTo(helixFrame(this.view.pitchAU, this.view.spanYears).totalLength);
+    this.controls.fitTo(sceneBounds(this.view), {
+      fovDeg: this.camera.fov,
+      aspect: this.width / this.height,
+      visibleFraction: (this.height - this.bottomInset) / this.height,
+    });
   }
 
   dispose() {
+    this.disposed = true;
     cancelAnimationFrame(this.frameId);
     this.resizeObserver.disconnect();
     this.labelObserver.disconnect();
     this.controls.dispose();
     disposeTree(this.scene);
+    disposeTree(this.skyScene);
     this.renderer.dispose();
     this.renderer.forceContextLoss();
     this.renderer.domElement.remove();
+  }
+
+  /** The sky stays empty until the catalogue arrives, and if it can't be loaded. */
+  private async loadStars() {
+    try {
+      const response = await fetch("/stars.bin");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const catalog = decodeStars(await response.arrayBuffer());
+      if (!this.disposed) this.sky.setCatalog(catalog);
+    } catch (err) {
+      console.warn("Couldn't load the star catalogue:", err);
+    }
   }
 
   private createPlanet(config: PlanetConfig): PlanetObjects {
@@ -292,7 +345,9 @@ export class OrbitScene {
     const xEnd = frame.xStart + frame.totalLength;
 
     // The Sun's straight-line path.
-    const axisExtend = Math.max(5, frame.totalLength * 0.03);
+    const { extend: axisExtend, arrowSize } = axisExtension(frame.totalLength);
+    this.arrowTipX = xEnd + axisExtend + arrowSize / 2;
+    this.arrowBackX = this.arrowTipX - arrowSize * 4;
     this.helixGroup.add(
       makeLine(
         [new THREE.Vector3(frame.xStart - axisExtend, 0, 0), new THREE.Vector3(xEnd + axisExtend, 0, 0)],
@@ -304,7 +359,7 @@ export class OrbitScene {
         new THREE.Vector3(xEnd + axisExtend, 0, 0),
         new THREE.Vector3(1, 0, 0),
         0xfacc15,
-        Math.max(0.7, frame.totalLength * 0.008),
+        arrowSize,
       ),
     );
 
@@ -345,22 +400,38 @@ export class OrbitScene {
     this.width = Math.max(1, this.container.clientWidth);
     this.height = Math.max(1, this.container.clientHeight);
     this.camera.aspect = this.width / this.height;
+    const bar = this.overlays.bottomBar?.getBoundingClientRect();
+    const bottom = this.container.getBoundingClientRect().bottom;
+    this.bottomInset = bar ? Math.min(Math.max(0, bottom - bar.top), this.height / 2) : 0;
+    // Render a window shifted down by half the inset, which moves the scene's centre up by as much.
+    if (this.bottomInset > 0) {
+      this.camera.setViewOffset(this.width, this.height, 0, this.bottomInset / 2, this.width, this.height);
+    } else {
+      this.camera.clearViewOffset();
+    }
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.width, this.height, false);
     this.lineResolution.set(this.width, this.height);
     setLineResolution(this.helixGroup, this.lineResolution);
     // ResizeObserver fires after this frame rendered and setSize cleared it.
-    this.renderer.render(this.scene, this.camera);
+    this.render();
   }
 
   private frame = (now: number) => {
     this.frameId = requestAnimationFrame(this.frame);
     const dt = this.lastTime === null ? 0 : Math.min((now - this.lastTime) / 1000, 0.05);
     this.lastTime = now;
+    this.controls.tick(dt);
+    this.sky.followCamera(this.camera);
 
     const view = this.view;
     if (view.isPlaying) {
       this.phase = advancePhase(this.phase, dt, view.spanYears, SWEEP_SECONDS);
+    }
+    const elapsed = formatElapsed(this.phase);
+    if (elapsed !== this.elapsedText && this.overlays.elapsed) {
+      this.overlays.elapsed.textContent = elapsed;
+      this.elapsedText = elapsed;
     }
 
     const frame = helixFrame(view.pitchAU, view.spanYears);
@@ -402,10 +473,18 @@ export class OrbitScene {
 
     this.placeLabel("sun", x, -1.75, 0);
     this.placeLabel("earth", x, ey + 1.05, ez);
+    this.placeApexLabel();
     this.applyLabels();
 
-    this.renderer.render(this.scene, this.camera);
+    this.render();
   };
+
+  private render() {
+    this.renderer.clear();
+    this.renderer.render(this.skyScene, this.camera);
+    this.renderer.clearDepth();
+    this.renderer.render(this.scene, this.camera);
+  }
 
   private hideLabel(id: BodyId) {
     const slot = this.labelSlotById[id];
@@ -423,7 +502,32 @@ export class OrbitScene {
     slot.depth = p.z;
   }
 
-  /** Fades labels that overlap a nearer one and stacks the nearest on top. */
+  /**
+   * Puts the apex label just past the arrow's tip, along the arrow's direction on
+   * screen, kept inside the view. Hidden when looking nearly along the arrow,
+   * where its tip lies behind the Sun.
+   */
+  private placeApexLabel() {
+    const slot = this.apexSlot;
+    if (!slot) return;
+    const toTip = this.tempVec.set(this.arrowTipX, 0, 0).sub(this.camera.position);
+    const alongArrow = Math.abs(toTip.x) / toTip.length() > APEX_LABEL_HIDE_COS;
+    const tip = this.tempVec.set(this.arrowTipX, 0, 0).project(this.camera);
+    const back = this.tempVec2.set(this.arrowBackX, 0, 0).project(this.camera);
+    slot.shown = labelsVisible(this.view) && !alongArrow && tip.z <= 1 && back.z <= 1;
+    slot.depth = tip.z;
+    const at = beyondTip(
+      { x: (tip.x * 0.5 + 0.5) * this.width, y: (-tip.y * 0.5 + 0.5) * this.height },
+      { x: (back.x * 0.5 + 0.5) * this.width, y: (-back.y * 0.5 + 0.5) * this.height },
+      slot.width,
+      slot.height,
+    );
+    const m = APEX_LABEL_MARGIN_PX;
+    slot.x = clamp(at.x, slot.width / 2 + m, this.width - slot.width / 2 - m);
+    slot.y = clamp(at.y, slot.height / 2 + m, this.height - this.bottomInset - slot.height / 2 - m);
+  }
+
+  /** Fades labels that overlap a winning one and stacks the winners on top. */
   private applyLabels() {
     fadeOverlappingLabels(this.labelSlots);
     const count = this.labelSlots.length;
@@ -439,5 +543,7 @@ export class OrbitScene {
 }
 
 function clampSegments(n: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, Math.round(n)));
+  return clamp(Math.round(n), min, max);
 }
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));

@@ -9,7 +9,7 @@ import {
   sunSpeedKms,
   sunX,
 } from "./physics";
-import { PRESETS, INITIAL_VIEW, formatBodyLabel } from "./view";
+import { PRESETS, INITIAL_VIEW, describeScene, formatBodyLabel, formatElapsed, formatKms } from "./view";
 
 describe("presets", () => {
   it.each([
@@ -20,10 +20,14 @@ describe("presets", () => {
     expect(sunSpeedKms(preset.pitchAU).toFixed(1)).toBe(kms.toFixed(1));
   });
 
-  it("starts on the galactic preset, at ~251 km/s and 1.00× scale", () => {
+  it("starts on the LSR preset, where the coils are visible", () => {
+    const lsr = PRESETS.find((p) => p.id === "lsr")!;
+    expect(INITIAL_VIEW.preset).toBe("lsr");
+    expect(INITIAL_VIEW.pitchAU).toBe(lsr.pitchAU);
+  });
+
+  it("puts the galactic preset at ~251 km/s and 1.00× scale", () => {
     const galactic = PRESETS.find((p) => p.id === "galactic")!;
-    expect(INITIAL_VIEW.preset).toBe("galactic");
-    expect(INITIAL_VIEW.pitchAU).toBe(galactic.pitchAU);
     expect(sunSpeedKms(galactic.pitchAU)).toBeCloseTo(251.0, 0);
     expect(axialScale(galactic.pitchAU).toFixed(2)).toBe("1.00");
   });
@@ -84,5 +88,42 @@ describe("labels", () => {
     [false, false, ""],
   ])("symbols=%s names=%s → %j", (showSymbols, showNames, expected) => {
     expect(formatBodyLabel({ ...INITIAL_VIEW, showSymbols, showNames }, "☉", "Sun")).toBe(expected);
+  });
+});
+
+describe("formatElapsed", () => {
+  it("shows years to one decimal", () => {
+    expect(formatElapsed(0.35)).toBe("t = 0.3 yrs");
+    expect(formatElapsed(12)).toBe("t = 12.0 yrs");
+  });
+});
+
+describe("formatKms", () => {
+  it.each([
+    [251.04, "251 km/s"],
+    [100, "100 km/s"],
+    [94.83, "94.8 km/s"],
+    [19.48, "19.5 km/s"],
+  ])("%s → %s", (kms, expected) => {
+    expect(formatKms(kms)).toBe(expected);
+  });
+});
+
+describe("describeScene", () => {
+  it("names Earth alone by default", () => {
+    expect(describeScene(INITIAL_VIEW)).toBe("Helical path of Earth around the Sun’s straight path, over 2 years");
+  });
+
+  it("says year for a one-year span", () => {
+    expect(describeScene({ ...INITIAL_VIEW, spanYears: 1 })).toBe(
+      "Helical path of Earth around the Sun’s straight path, over 1 year",
+    );
+  });
+
+  it("lists every body shown", () => {
+    const view = { ...INITIAL_VIEW, showMoon: true, showInnerPlanets: true };
+    expect(describeScene(view)).toBe(
+      "Helical paths of Earth, the Moon, Mercury, Venus and Mars around the Sun’s straight path, over 2 years",
+    );
   });
 });

@@ -90,33 +90,23 @@ export function setTether(line: THREE.Line, ax: number, ay: number, az: number, 
   distances.needsUpdate = true;
 }
 
-export function createStarfield(count = 2800): THREE.Points {
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const palette = [0xffffff, 0xbae6fd, 0xfef08a, 0xc7d2fe].map((c) => new THREE.Color(c));
-
-  for (let i = 0; i < count; i++) {
-    const r = 9000 + Math.random() * 14000;
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = r * Math.cos(phi);
-    positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
-
-    const c = palette[Math.floor(Math.random() * palette.length)];
-    const brightness = 0.45 + Math.random() * 0.55;
-    colors[i * 3] = c.r * brightness;
-    colors[i * 3 + 1] = c.g * brightness;
-    colors[i * 3 + 2] = c.b * brightness;
-  }
-
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  return new THREE.Points(
-    geo,
-    new THREE.PointsMaterial({ size: 28, vertexColors: true, transparent: true, opacity: 0.85 }),
-  );
+/** A white disc that fades out at its edge, so points draw as round stars instead of squares. */
+export function roundStarTexture(): THREE.CanvasTexture {
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(0.45, "rgba(255,255,255,1)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+  const texture = new THREE.CanvasTexture(canvas);
+  // Stars are a few pixels across: mipmaps would average the disc into a faint smudge.
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  return texture;
 }
 
 /** Frees the GPU resources of an object and everything under it. */
@@ -125,7 +115,9 @@ export function disposeTree(root: THREE.Object3D) {
     const mesh = obj as THREE.Mesh;
     mesh.geometry?.dispose();
     const material = mesh.material as THREE.Material | THREE.Material[] | undefined;
-    if (Array.isArray(material)) material.forEach((m) => m.dispose());
-    else material?.dispose();
+    for (const m of Array.isArray(material) ? material : material ? [material] : []) {
+      (m as THREE.Material & { map?: THREE.Texture | null }).map?.dispose();
+      m.dispose();
+    }
   });
 }

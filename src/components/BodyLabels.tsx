@@ -1,5 +1,6 @@
-import type { RefObject } from "react";
+import type { Ref, RefObject } from "react";
 import { BODY_LABELS, type BodyId } from "@/lib/orbit/bodies";
+import { APEX_LABELS } from "@/lib/orbit/sky";
 import { formatBodyLabel, labelsVisible, type ViewState } from "@/lib/orbit/view";
 
 const LABEL_STYLES: Record<BodyId, string> = {
@@ -15,14 +16,19 @@ const LABEL_STYLES: Record<BodyId, string> = {
   neptune: "bg-indigo-950/85 text-indigo-200 border-indigo-400/40",
 };
 
-/** HTML labels the scene moves every frame by projecting each body's position. */
+/** HTML labels the scene moves every frame by projecting each body's position, and the arrow's tip. */
 export function BodyLabels({
   view,
   labelRefs,
+  apexRef,
 }: {
   view: ViewState;
   labelRefs: RefObject<Partial<Record<BodyId, HTMLElement | null>>>;
+  apexRef?: Ref<HTMLDivElement>;
 }) {
+  // Glyphs alone are hard to tell apart at text size.
+  const symbolsOnly = view.showSymbols && !view.showNames;
+  const size = symbolsOnly ? ["text-base", "text-xl"] : ["text-xs", "text-sm"];
   return (
     <div
       className={`pointer-events-none fixed inset-0 z-10 overflow-hidden ${labelsVisible(view) ? "" : "hidden"}`}
@@ -35,11 +41,17 @@ export function BodyLabels({
             labelRefs.current[body.id] = el;
           }}
           title={body.title}
-          className={`label-3d border py-0.5 opacity-0 ${body.id === "moon" ? "px-1.5 text-xs" : "px-2 text-sm"} ${LABEL_STYLES[body.id]}`}
+          className={`label-3d border py-0.5 opacity-0 ${body.id === "moon" ? `px-1.5 ${size[0]}` : `px-2 ${size[1]}`} ${LABEL_STYLES[body.id]}`}
         >
           {formatBodyLabel(view, body.symbol, body.name)}
         </div>
       ))}
+      <div
+        ref={apexRef}
+        className="label-3d border border-yellow-400/25 bg-slate-950/70 px-2 py-0.5 text-xs font-medium text-yellow-200/90 opacity-0"
+      >
+        {APEX_LABELS[view.skyFrame]}
+      </div>
     </div>
   );
 }

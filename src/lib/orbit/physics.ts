@@ -58,7 +58,13 @@ export function rescalePhase(phase: number, prevSpan: number, nextSpan: number):
   return (phase / prevSpan) * nextSpan;
 }
 
-/** Camera distance that frames the whole visible helix. */
-export function fitCameraRadius(totalLength: number): number {
-  return Math.max(24, Math.min(15000, totalLength * 0.82 + 20));
+/** How far the Sun's axis runs past each end of the helix, and its arrowhead's length. */
+export function axisExtension(totalLength: number): { extend: number; arrowSize: number } {
+  return { extend: Math.max(5, totalLength * 0.03), arrowSize: Math.max(0.7, totalLength * 0.008) };
+}
+
+/** How far the axis and its arrowhead (centred on the axis's end) reach past the helix. */
+export function axisOverhang(totalLength: number): number {
+  const { extend, arrowSize } = axisExtension(totalLength);
+  return extend + arrowSize / 2;
 }
